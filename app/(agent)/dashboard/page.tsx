@@ -1,10 +1,32 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface Stats {
+  activeProperties: number;
+  unreadMessages: number;
+  activeLinks: number;
+}
+
 export default function DashboardPage() {
   const { agent, organization } = useAuth();
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then(r => r.json())
+      .then(json => {
+        if (!json.error) setStats(json);
+      });
+  }, []);
+
+  const statItems = [
+    { label: 'נכסים פעילים', value: stats?.activeProperties ?? '—', icon: '🏠' },
+    { label: 'הודעות שלא נקראו', value: stats?.unreadMessages ?? '—', icon: '💬' },
+    { label: 'קישורים פעילים', value: stats?.activeLinks ?? '—', icon: '🔗' },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -15,11 +37,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'נכסים פעילים', value: '0', icon: '🏠' },
-          { label: 'הודעות חדשות', value: '0', icon: '💬' },
-          { label: 'קישורים שנשלחו', value: '0', icon: '🔗' },
-        ].map(stat => (
+        {statItems.map(stat => (
           <div key={stat.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <div className="text-3xl mb-2">{stat.icon}</div>
             <div className="text-2xl font-bold text-white">{stat.value}</div>
