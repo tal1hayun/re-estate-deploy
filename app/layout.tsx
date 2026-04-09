@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Re-Estate — מערכת ניהול נכסים",
+  title: "T ESTATE — מערכת ניהול נכסים",
   description: "פלטפורמה לניהול נכסי נדל״ן עבור סוכנים מקצועיים",
 };
 

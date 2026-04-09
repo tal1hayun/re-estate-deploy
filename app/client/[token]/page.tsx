@@ -90,7 +90,7 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-3">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm">🏠</div>
-        <span className="font-semibold text-white">Re-Estate</span>
+        <span className="font-semibold text-white">T ESTATE</span>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -219,7 +219,7 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-600 text-xs mt-8">מופעל על ידי Re-Estate · מערכת ניהול נכסי נדל״ן</p>
+        <p className="text-center text-gray-600 text-xs mt-8">מופעל על ידי T ESTATE · מערכת ניהול נכסי נדל״ן</p>
       </div>
     </div>
   );

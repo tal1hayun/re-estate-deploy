@@ -55,6 +55,10 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const [priceReason, setPriceReason] = useState('');
   const [savingPrice, setSavingPrice] = useState(false);
 
+  // Mark as sold
+  const [confirmSold, setConfirmSold] = useState(false);
+  const [markingSold, setMarkingSold] = useState(false);
+
   // Image upload
   const [uploading, setUploading] = useState(false);
 
@@ -201,6 +205,18 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     fetchProperty();
   }
 
+  async function handleMarkSold() {
+    setMarkingSold(true);
+    await fetch(`/api/properties/${propertyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'sold' }),
+    });
+    setConfirmSold(false);
+    setMarkingSold(false);
+    fetchProperty();
+  }
+
   async function handleDeleteProperty() {
     setDeletingProperty(false);
     await fetch(`/api/properties/${propertyId}`, { method: 'DELETE' });
@@ -317,6 +333,33 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
         </div>
       )}
 
+      {/* Confirm Sold Modal */}
+      {confirmSold && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm">
+            <h2 className="text-white font-semibold text-lg mb-2">סמן כנמכר</h2>
+            <p className="text-gray-400 text-sm mb-6">
+              לסמן את <span className="text-white font-medium">{property?.title}</span> כנמכר?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleMarkSold}
+                disabled={markingSold}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {markingSold ? '...' : 'נמכר'}
+              </button>
+              <button
+                onClick={() => setConfirmSold(false)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-lg text-sm transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirm Modal */}
       {deletingProperty && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
@@ -367,6 +410,14 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               >
                 עריכה
               </button>
+              {property.status !== 'sold' && (
+                <button
+                  onClick={() => setConfirmSold(true)}
+                  className="text-xs px-3 py-1.5 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 rounded-lg transition-colors"
+                >
+                  נמכר
+                </button>
+              )}
               <button
                 onClick={() => setDeletingProperty(true)}
                 className="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-colors"
