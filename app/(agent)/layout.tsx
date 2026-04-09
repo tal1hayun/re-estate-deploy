@@ -26,6 +26,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     { href: '/dashboard', label: 'ראשי', icon: '🏠' },
     { href: '/properties', label: 'נכסים', icon: '🏘' },
     { href: '/messages', label: 'הודעות', icon: '💬' },
+    { href: '/organization', label: 'ארגון', icon: '🏢' },
   ];
 
   return (
