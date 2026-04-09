@@ -20,10 +20,10 @@ export default function ThreeBackground() {
     camera.lookAt(0, 0, 0);
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'low-power' });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(1);
+    renderer.domElement.style.pointerEvents = 'none';
     mount.appendChild(renderer.domElement);
 
     // Lighting
@@ -32,39 +32,28 @@ export default function ThreeBackground() {
 
     const warmLight = new THREE.DirectionalLight(0xffd090, 1.2);
     warmLight.position.set(25, 35, 15);
-    warmLight.castShadow = true;
     scene.add(warmLight);
 
     const rimLight = new THREE.PointLight(0x1a2a6c, 1, 80);
     rimLight.position.set(-25, 10, -15);
     scene.add(rimLight);
 
-    // Ground plane (subtle)
-    const groundGeo = new THREE.PlaneGeometry(80, 80);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x080818, roughness: 1 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Buildings — shared material for performance
+    const buildingMat = new THREE.MeshStandardMaterial({
+      color: 0x0c0c1a,
+      metalness: 0.1,
+      roughness: 0.9,
+    });
 
-    // Buildings
     const group = new THREE.Group();
     const gridSize = 5;
 
     for (let x = -gridSize; x <= gridSize; x++) {
       for (let z = -gridSize; z <= gridSize; z++) {
         if (Math.random() < 0.3) continue;
-
         const h = 2 + Math.random() * 14;
         const w = 0.6 + Math.random() * 0.8;
         const d = 0.6 + Math.random() * 0.8;
-
-        const buildingMat = new THREE.MeshStandardMaterial({
-          color: 0x0c0c1a,
-          metalness: 0.1,
-          roughness: 0.9,
-        });
-
         const geo = new THREE.BoxGeometry(w, h, d);
         const mesh = new THREE.Mesh(geo, buildingMat);
         mesh.position.set(
@@ -72,8 +61,6 @@ export default function ThreeBackground() {
           h / 2,
           z * 2.5 + (Math.random() - 0.5) * 0.8
         );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         group.add(mesh);
       }
     }
@@ -108,5 +95,5 @@ export default function ThreeBackground() {
     };
   }, []);
 
-  return <div ref={mountRef} className="absolute inset-0 w-full h-full" />;
+  return <div ref={mountRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
 }
