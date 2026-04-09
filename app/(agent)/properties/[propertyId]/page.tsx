@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import { supabase } from '@/lib/supabase';
@@ -19,12 +19,15 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const { propertyId } = use(params);
   const { agent } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { updatePrice, uploadImage, deleteImage } = useProperties();
 
   const [property, setProperty] = useState<FullProperty | null>(null);
   const [priceHistory, setPriceHistory] = useState<(PriceHistory & { agents: { full_name: string } })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages'>('overview');
+  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages'>(
+    searchParams.get('tab') === 'messages' ? 'messages' : 'overview'
+  );
 
   // Messages state
   const [messages, setMessages] = useState<Message[]>([]);
