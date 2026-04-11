@@ -62,7 +62,8 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   // Image upload
   const [uploading, setUploading] = useState(false);
 
-  const isOwn = property?.agent_id === agent?.id;
+  const isAdmin = agent?.role === 'admin';
+  const isOwn = property?.agent_id === agent?.id || isAdmin;
 
   useEffect(() => {
     fetchProperty();

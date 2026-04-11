@@ -24,6 +24,7 @@ function IconHome() {
 
 export default function PropertiesPage() {
   const { agent } = useAuth();
+  const isAdmin = agent?.role === 'admin';
   const { properties, loading } = useProperties();
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'sold' | 'inactive'>('all');
@@ -267,7 +268,7 @@ export default function PropertiesPage() {
                     }}>
                       {formatPrice(property.current_price)}
                     </span>
-                    {isOwn && (
+                    {(isOwn || isAdmin) && (
                       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 400 }}>
                         ניתן לעריכה
                       </span>

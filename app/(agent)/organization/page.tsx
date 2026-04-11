@@ -11,6 +11,8 @@ export default function OrganizationPage() {
   const [inviteUrl, setInviteUrl] = useState('');
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   const isAdmin = currentAgent?.role === 'admin';
 
@@ -29,6 +31,14 @@ export default function OrganizationPage() {
     const json = await res.json();
     setInviteUrl(json.inviteUrl || '');
     setGenerating(false);
+  }
+
+  async function removeAgent(agentId: string) {
+    setRemovingId(agentId);
+    const res = await fetch(`/api/organization/agents/${agentId}`, { method: 'DELETE' });
+    setRemovingId(null);
+    setConfirmRemoveId(null);
+    if (res.ok) fetchAgents();
   }
 
   async function copyInvite() {
@@ -156,15 +166,82 @@ export default function OrganizationPage() {
                   </div>
                 </div>
 
-                <span className={a.role === 'admin' ? 'status-active' : 'status-inactive'}
-                  style={{
-                    background: a.role === 'admin' ? 'var(--color-accent-bg)' : 'var(--color-surface-2)',
-                    padding: '3px 10px',
-                    borderRadius: 4,
-                    letterSpacing: '0.06em',
-                  }}>
-                  {a.role === 'admin' ? 'מנהל' : 'סוכן'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className={a.role === 'admin' ? 'status-active' : 'status-inactive'}
+                    style={{
+                      background: a.role === 'admin' ? 'var(--color-accent-bg)' : 'var(--color-surface-2)',
+                      padding: '3px 10px',
+                      borderRadius: 4,
+                      letterSpacing: '0.06em',
+                    }}>
+                    {a.role === 'admin' ? 'מנהל' : 'סוכן'}
+                  </span>
+
+                  {/* Remove button — admin only, not self, not other admins */}
+                  {isAdmin && a.user_id !== currentAgent?.user_id && a.role !== 'admin' && (
+                    confirmRemoveId === a.id ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          onClick={() => removeAgent(a.id)}
+                          disabled={removingId === a.id}
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 4,
+                            border: 'none',
+                            background: 'var(--color-danger-bg)',
+                            color: 'var(--color-danger)',
+                            fontSize: 'var(--text-xs)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          {removingId === a.id ? '...' : 'אשר הסרה'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmRemoveId(null)}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--color-muted)',
+                            fontSize: 'var(--text-xs)',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          ביטול
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmRemoveId(a.id)}
+                        style={{
+                          padding: '3px 10px',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-border)',
+                          background: 'transparent',
+                          color: 'var(--color-muted)',
+                          fontSize: 'var(--text-xs)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          transition: 'border-color 0.15s, color 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(240,104,120,0.4)';
+                          (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-danger)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+                          (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)';
+                        }}
+                      >
+                        הסר
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
             ))}
           </div>
