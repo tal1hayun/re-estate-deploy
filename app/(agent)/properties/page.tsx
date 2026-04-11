@@ -6,6 +6,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import type { PropertyImage } from '@/types';
 
+function IconPlus() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  );
+}
+function IconHome() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.18 }}>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  );
+}
+
 export default function PropertiesPage() {
   const { agent } = useAuth();
   const { properties, loading } = useProperties();
@@ -28,81 +44,120 @@ export default function PropertiesPage() {
     return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-images/${cover.storage_path}`;
   }
 
-  const statusLabel: Record<string, string> = {
-    active: 'פעיל',
-    sold: 'נמכר',
-    inactive: 'לא פעיל',
-  };
+  const statusLabel: Record<string, string> = { active: 'פעיל', sold: 'נמכר', inactive: 'לא פעיל' };
 
-  const statusColor: Record<string, string> = {
-    active: 'bg-green-900/50 text-green-400',
-    sold: 'bg-blue-900/50 text-blue-400',
-    inactive: 'bg-gray-800 text-gray-500',
-  };
+  const filterTabs: { key: 'all' | 'mine'; label: string }[] = [
+    { key: 'all', label: 'כל הנכסים' },
+    { key: 'mine', label: 'הנכסים שלי' },
+  ];
+
+  const statusTabs: { key: 'all' | 'active' | 'sold' | 'inactive'; label: string }[] = [
+    { key: 'all', label: 'הכל' },
+    { key: 'active', label: 'פעיל' },
+    { key: 'sold', label: 'נמכר' },
+    { key: 'inactive', label: 'לא פעיל' },
+  ];
+
+  function TabGroup<T extends string>({ items, value, onChange }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+    return (
+      <div style={{
+        display: 'flex',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 8,
+        padding: 3,
+        gap: 2,
+      }}>
+        {items.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 6,
+              border: 'none',
+              background: value === tab.key ? 'var(--color-surface-3)' : 'transparent',
+              color: value === tab.key ? 'var(--color-fg)' : 'var(--color-muted)',
+              fontSize: 'var(--text-xs)',
+              fontWeight: value === tab.key ? 600 : 400,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.15s',
+              letterSpacing: '0.02em',
+              borderBottom: value === tab.key ? '1px solid rgba(46,168,223,0.3)' : '1px solid transparent',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 32, flexWrap: 'wrap', gap: 16,
+      }}>
         <div>
-          <h1 className="text-2xl font-bold text-white">נכסים</h1>
-          <p className="text-gray-400 text-sm mt-1">{filtered.length} נכסים</p>
+          <h1 style={{
+            fontSize: 'var(--text-2xl)',
+            fontWeight: 700,
+            color: 'var(--color-fg)',
+            letterSpacing: '-0.02em',
+            marginBottom: 4,
+          }}>
+            נכסים
+          </h1>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 400 }}>
+            {filtered.length} נכסים{statusFilter !== 'all' ? ` · ${statusLabel[statusFilter]}` : ''}
+          </p>
         </div>
         <Link
           href="/properties/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors"
+          className="btn-primary"
+          style={{ textDecoration: 'none', gap: 8, padding: '10px 20px', fontSize: 'var(--text-sm)' }}
         >
-          <span>+</span>
-          <span>נכס חדש</span>
+          <IconPlus />
+          נכס חדש
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-1">
-          {(['all', 'mine'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                filter === f ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {f === 'all' ? 'כל הנכסים' : 'הנכסים שלי'}
-            </button>
-          ))}
-        </div>
-        <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-1">
-          {(['all', 'active', 'sold', 'inactive'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                statusFilter === s ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {s === 'all' ? 'הכל' : statusLabel[s]}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+        <TabGroup items={filterTabs} value={filter} onChange={setFilter} />
+        <TabGroup items={statusTabs} value={statusFilter} onChange={setStatusFilter} />
       </div>
 
-      {/* Grid */}
+      {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+          <div className="spinner"/>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="text-5xl mb-4">🏠</div>
-          <h3 className="text-white font-medium mb-2">אין נכסים עדיין</h3>
-          <p className="text-gray-500 text-sm mb-6">הוסף את הנכס הראשון שלך</p>
-          <Link href="/properties/new" className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg transition-colors">
+        <div style={{ textAlign: 'center', padding: '80px 0' }}>
+          <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+            <IconHome />
+          </div>
+          <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8 }}>
+            אין נכסים עדיין
+          </h3>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 28 }}>
+            הוסף את הנכס הראשון שלך
+          </p>
+          <Link href="/properties/new" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex' }}>
             הוסף נכס חדש
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: 16,
+        }}>
           {filtered.map(property => {
             const coverUrl = getCoverImage(property.property_images);
             const isOwn = property.agent_id === agent?.id;
@@ -110,35 +165,112 @@ export default function PropertiesPage() {
               <Link
                 key={property.id}
                 href={`/properties/${property.id}`}
-                className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-colors group"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  textDecoration: 'none',
+                  display: 'block',
+                  transition: 'border-color 0.2s, transform 0.2s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(46,168,223,0.3)';
+                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--color-border)';
+                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+                }}
               >
                 {/* Image */}
-                <div className="h-48 bg-gray-800 relative overflow-hidden">
+                <div style={{ height: 192, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
                   {coverUrl ? (
-                    <img src={coverUrl} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img
+                      src={coverUrl}
+                      alt={property.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                      onMouseEnter={e => (e.target as HTMLImageElement).style.transform = 'scale(1.04)'}
+                      onMouseLeave={e => (e.target as HTMLImageElement).style.transform = 'scale(1)'}
+                    />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-4xl text-gray-600">🏠</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <IconHome />
+                    </div>
                   )}
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full ${statusColor[property.status]}`}>
+
+                  {/* Status badge */}
+                  <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+                    <span
+                      className={
+                        property.status === 'active' ? 'status-active' :
+                        property.status === 'sold' ? 'status-sold' : 'status-inactive'
+                      }
+                      style={{
+                        background: 'rgba(6,15,20,0.75)',
+                        backdropFilter: 'blur(8px)',
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        border: property.status === 'active' ? '1px solid rgba(61,214,140,0.25)' :
+                                property.status === 'sold' ? '1px solid rgba(122,154,170,0.25)' : '1px solid transparent',
+                      }}
+                    >
                       {statusLabel[property.status]}
                     </span>
-                    {!isOwn && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-purple-900/50 text-purple-400">
-                        {property.agents?.full_name?.split(' ')[0]}
+                    {!isOwn && property.agents?.full_name && (
+                      <span style={{
+                        background: 'rgba(6,15,20,0.75)',
+                        backdropFilter: 'blur(8px)',
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        fontSize: 'var(--text-xs)',
+                        fontWeight: 500,
+                        color: 'var(--color-secondary)',
+                        border: '1px solid rgba(122,154,170,0.2)',
+                      }}>
+                        {property.agents.full_name.split(' ')[0]}
                       </span>
                     )}
                   </div>
                 </div>
 
                 {/* Info */}
-                <div className="p-4">
-                  <h3 className="text-white font-medium mb-1 truncate">{property.title}</h3>
-                  <p className="text-gray-500 text-sm mb-3 truncate">{property.city} · {property.address}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-400 font-semibold">{formatPrice(property.current_price)}</span>
+                <div style={{ padding: '16px 18px 18px' }}>
+                  <h3 style={{
+                    fontSize: 'var(--text-base)',
+                    fontWeight: 600,
+                    color: 'var(--color-fg)',
+                    marginBottom: 4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {property.title}
+                  </h3>
+                  <p style={{
+                    fontSize: 'var(--text-sm)',
+                    color: 'var(--color-muted)',
+                    marginBottom: 14,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {property.city} · {property.address}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{
+                      fontSize: 'var(--text-lg)',
+                      fontWeight: 700,
+                      color: 'var(--color-accent)',
+                      letterSpacing: '-0.01em',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {formatPrice(property.current_price)}
+                    </span>
                     {isOwn && (
-                      <span className="text-xs text-gray-600">ניתן לעריכה</span>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 400 }}>
+                        ניתן לעריכה
+                      </span>
                     )}
                   </div>
                 </div>

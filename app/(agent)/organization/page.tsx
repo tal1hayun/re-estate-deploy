@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Agent, Organization } from '@/types';
+import type { Agent } from '@/types';
 
 export default function OrganizationPage() {
   const { agent: currentAgent, organization } = useAuth();
@@ -14,9 +14,7 @@ export default function OrganizationPage() {
 
   const isAdmin = currentAgent?.role === 'admin';
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
+  useEffect(() => { fetchAgents(); }, []);
 
   async function fetchAgents() {
     const res = await fetch('/api/organization/agents');
@@ -39,56 +37,132 @@ export default function OrganizationPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-white mb-8">הארגון שלי</h1>
+  function SectionTitle({ children }: { children: React.ReactNode }) {
+    return (
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8 }}>
+          {children}
+        </h2>
+        <div style={{ height: 1, background: 'var(--color-border)' }}/>
+      </div>
+    );
+  }
 
-      {/* Org details */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-        <h2 className="text-white font-semibold text-lg mb-4">פרטי המשרד</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-500 text-sm">שם המשרד</span>
-            <span className="text-white text-sm">{organization?.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500 text-sm">התפקיד שלי</span>
-            <span className={`text-sm px-2 py-0.5 rounded-full ${isAdmin ? 'bg-blue-600/20 text-blue-400' : 'bg-gray-800 text-gray-400'}`}>
-              {isAdmin ? 'מנהל' : 'סוכן'}
-            </span>
-          </div>
+  return (
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '40px 32px' }}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{
+          fontSize: 'var(--text-2xl)',
+          fontWeight: 700,
+          color: 'var(--color-fg)',
+          letterSpacing: '-0.02em',
+          marginBottom: 4,
+        }}>
+          הארגון שלי
+        </h1>
+        {organization && (
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 300 }}>
+            {organization.name}
+          </p>
+        )}
+      </div>
+
+      {/* Org Details */}
+      <div style={{ marginBottom: 40 }}>
+        <SectionTitle>פרטי המשרד</SectionTitle>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {[
+            { label: 'שם המשרד', value: organization?.name || '—' },
+            { label: 'התפקיד שלי', value: isAdmin ? 'מנהל' : 'סוכן', isRole: true },
+            { label: 'אימייל יצירת קשר', value: organization?.contact_email || '—', ltr: true },
+          ].map((row, i, arr) => (
+            <div
+              key={row.label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 0',
+                borderBottom: i < arr.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
+              }}
+            >
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 400 }}>
+                {row.label}
+              </span>
+              <span style={{
+                fontSize: 'var(--text-sm)',
+                fontWeight: row.isRole ? 600 : 500,
+                color: row.isRole && isAdmin ? 'var(--color-accent)' : 'var(--color-fg)',
+                direction: row.ltr ? 'ltr' : 'rtl',
+              }}>
+                {row.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Agents list */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-        <h2 className="text-white font-semibold text-lg mb-4">
-          סוכנים ({agents.length})
-        </h2>
+      {/* Agents */}
+      <div style={{ marginBottom: 40 }}>
+        <SectionTitle>סוכנים ({agents.length})</SectionTitle>
 
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+            <div className="spinner"/>
           </div>
         ) : (
-          <div className="space-y-2">
-            {agents.map(a => (
-              <div key={a.id} className="flex items-center justify-between py-3 border-b border-gray-800 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center text-white text-sm font-medium">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {agents.map((a, i) => (
+              <div
+                key={a.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: i < agents.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 36, height: 36,
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 600,
+                    color: 'var(--color-accent)',
+                    flexShrink: 0,
+                  }}>
                     {a.full_name.charAt(0)}
                   </div>
+
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white text-sm font-medium">{a.full_name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-fg)' }}>
+                        {a.full_name}
+                      </span>
                       {a.user_id === currentAgent?.user_id && (
-                        <span className="text-xs text-gray-500">(אני)</span>
+                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>(אני)</span>
                       )}
                     </div>
-                    <span className="text-gray-500 text-xs">{a.email}</span>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 300 }}>
+                      {a.email}
+                    </span>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${a.role === 'admin' ? 'bg-blue-600/20 text-blue-400' : 'bg-gray-800 text-gray-400'}`}>
+
+                <span className={a.role === 'admin' ? 'status-active' : 'status-inactive'}
+                  style={{
+                    background: a.role === 'admin' ? 'var(--color-accent-bg)' : 'var(--color-surface-2)',
+                    padding: '3px 10px',
+                    borderRadius: 4,
+                    letterSpacing: '0.06em',
+                  }}>
                   {a.role === 'admin' ? 'מנהל' : 'סוכן'}
                 </span>
               </div>
@@ -99,9 +173,9 @@ export default function OrganizationPage() {
 
       {/* Invite (admin only) */}
       {isAdmin && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-          <h2 className="text-white font-semibold text-lg mb-2">הזמן סוכן חדש</h2>
-          <p className="text-gray-500 text-sm mb-4">
+        <div>
+          <SectionTitle>הזמן סוכן חדש</SectionTitle>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)', fontWeight: 300, marginBottom: 20, lineHeight: 1.65 }}>
             צור קישור הזמנה ושלח לסוכן החדש. הקישור תקף ל-7 ימים.
           </p>
 
@@ -109,19 +183,54 @@ export default function OrganizationPage() {
             <button
               onClick={generateInvite}
               disabled={generating}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-sm transition-colors"
+              className="btn-primary"
+              style={{ fontSize: 'var(--text-sm)', padding: '10px 20px' }}
             >
-              {generating ? 'מייצר...' : '+ צור קישור הזמנה'}
+              {generating ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}/>
+                  מייצר...
+                </span>
+              ) : '+ צור קישור הזמנה'}
             </button>
           ) : (
-            <div className="space-y-3">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 flex items-center gap-3">
-                <span className="text-gray-300 text-sm flex-1 truncate font-mono">{inviteUrl}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                padding: '10px 14px',
+              }}>
+                <span style={{
+                  flex: 1,
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-secondary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  direction: 'ltr',
+                  fontFamily: 'monospace',
+                }}>
+                  {inviteUrl}
+                </span>
                 <button
                   onClick={copyInvite}
-                  className={`flex-shrink-0 text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                    copied ? 'bg-green-600/20 text-green-400' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                  }`}
+                  style={{
+                    flexShrink: 0,
+                    padding: '5px 14px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: copied ? 'var(--color-success-bg)' : 'var(--color-surface-3)',
+                    color: copied ? 'var(--color-success)' : 'var(--color-fg)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.15s',
+                  }}
                 >
                   {copied ? 'הועתק ✓' : 'העתק'}
                 </button>
@@ -129,7 +238,8 @@ export default function OrganizationPage() {
               <button
                 onClick={generateInvite}
                 disabled={generating}
-                className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                className="btn-link"
+                style={{ textAlign: 'right', fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}
               >
                 צור קישור חדש
               </button>

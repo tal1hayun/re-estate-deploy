@@ -13,16 +13,21 @@ type ConversationGroup = {
   last_message: Message;
 };
 
+function IconChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(180deg)', flexShrink: 0, opacity: 0.4 }}>
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  );
+}
+
 export default function MessagesPage() {
   const [groups, setGroups] = useState<ConversationGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAllMessages();
-  }, []);
+  useEffect(() => { fetchAllMessages(); }, []);
 
   async function fetchAllMessages() {
-    // Fetch all messages for all properties the agent has access to
     const res = await fetch('/api/messages/all');
     const json = await res.json();
     setGroups(json.groups || []);
@@ -40,57 +45,139 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">הודעות</h1>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 32px' }}>
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{
+          fontSize: 'var(--text-2xl)',
+          fontWeight: 700,
+          color: 'var(--color-fg)',
+          letterSpacing: '-0.02em',
+          marginBottom: 4,
+        }}>
+          הודעות
+        </h1>
+        {!loading && groups.length > 0 && (
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>
+            {groups.reduce((acc, g) => acc + g.unread, 0)} הודעות שלא נקראו
+          </p>
+        )}
+      </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+          <div className="spinner"/>
         </div>
       ) : groups.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="text-5xl mb-4">💬</div>
-          <h3 className="text-white font-medium mb-2">אין הודעות עדיין</h3>
-          <p className="text-gray-500 text-sm">הודעות מלקוחות יופיעו כאן</p>
+        <div style={{ textAlign: 'center', padding: '80px 0' }}>
+          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.25 }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8 }}>
+            אין הודעות עדיין
+          </h3>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>
+            הודעות מלקוחות יופיעו כאן
+          </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {groups.map(group => (
+        <div style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 12,
+          overflow: 'hidden',
+        }}>
+          {groups.map((group, i) => (
             <Link
               key={group.property_id}
               href={`/properties/${group.property_id}?tab=messages`}
-              className="flex items-center gap-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl px-5 py-4 transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                padding: '16px 20px',
+                textDecoration: 'none',
+                borderBottom: i < groups.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = 'var(--color-surface-2)'}
+              onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'}
             >
-              {/* Unread badge */}
-              <div className="relative flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-600/20 rounded-full flex items-center justify-center text-lg">
-                  🏠
+              {/* Avatar/badge */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                  width: 40, height: 40,
+                  background: 'var(--color-accent-bg)',
+                  borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--color-accent)',
+                  border: '1px solid rgba(46,168,223,0.15)',
+                }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
                 </div>
                 {group.unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-medium">
+                  <span style={{
+                    position: 'absolute', top: -2, right: -2,
+                    minWidth: 18, height: 18,
+                    background: 'var(--color-accent)',
+                    borderRadius: 9,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#040d11',
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    padding: '0 4px',
+                    border: '1.5px solid var(--color-surface)',
+                  }}>
                     {group.unread}
                   </span>
                 )}
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-white font-medium truncate">{group.property_title}</h3>
-                  <span className="text-gray-500 text-xs flex-shrink-0 mr-2">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <h3 style={{
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: group.unread > 0 ? 600 : 500,
+                    color: 'var(--color-fg)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {group.property_title}
+                  </h3>
+                  <span style={{
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--color-muted)',
+                    fontWeight: 400,
+                    flexShrink: 0,
+                    marginRight: 8,
+                  }}>
                     {timeAgo(group.last_message.created_at)}
                   </span>
                 </div>
-                <p className="text-gray-400 text-sm truncate">
-                  <span className="text-gray-500">{group.last_message.sender_name}: </span>
-                  {group.last_message.message_text}
+                <p style={{
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-secondary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 300,
+                  marginBottom: 2,
+                }}>
+                  <span style={{ color: 'var(--color-muted)', fontWeight: 500 }}>{group.last_message.sender_name}:</span>
+                  {' '}{group.last_message.message_text}
                 </p>
-                <p className="text-gray-600 text-xs mt-0.5">{group.property_city}</p>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 300 }}>
+                  {group.property_city}
+                </span>
               </div>
 
-              <svg className="w-4 h-4 text-gray-600 flex-shrink-0 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <IconChevron />
             </Link>
           ))}
         </div>

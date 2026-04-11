@@ -142,7 +142,7 @@ export interface AuthContextType {
   organization: Organization | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  signUp: (email: string, password: string, orgName: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, orgName: string, fullName: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }

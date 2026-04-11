@@ -42,13 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signUp(email: string, password: string, orgName: string, fullName: string) {
-    const { error } = await supabase.auth.signUp({
+  async function signUp(email: string, password: string, orgName: string, fullName: string): Promise<{ needsEmailConfirmation: boolean }> {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { org_name: orgName, full_name: fullName } },
     });
     if (error) throw error;
+    return { needsEmailConfirmation: !data.session };
   }
 
   async function signIn(email: string, password: string) {

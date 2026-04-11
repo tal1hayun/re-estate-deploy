@@ -1,147 +1,815 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import ThreeBackground from '@/components/ThreeBackground';
+import MapBackground from '@/components/MapBackground';
 
-export default function LoginPage() {
+// ── Icons ─────────────────────────────────────────────────────────────────────
+function IconBuilding() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h6M3 15h6M15 9h6M15 15h6"/>
+    </svg>
+  );
+}
+function IconMessage() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+}
+function IconLink() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+  );
+}
+function IconCheck() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+function IconArrow() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+    </svg>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function translateError(msg: string): string {
+  if (msg.includes('Invalid login credentials')) return 'פרטי הכניסה שגויים — בדוק אימייל וסיסמה';
+  if (msg.includes('Email not confirmed')) return 'האימייל טרם אומת — בדוק את תיבת הדואר שלך';
+  if (msg.includes('User already registered')) return 'משתמש עם אימייל זה כבר קיים';
+  if (msg.includes('Password should be at least')) return 'הסיסמה חייבת להכיל לפחות 6 תווים';
+  if (msg.includes('Unable to validate email')) return 'כתובת האימייל אינה תקינה';
+  if (msg.includes('signup_disabled') || msg.includes('Signup is disabled')) return 'ההרשמה מושבתת כרגע';
+  return 'אירעה שגיאה — נסה שוב';
+}
+
+// ── Mock data for landing sections ────────────────────────────────────────────
+const FEATURES = [
+  {
+    icon: <IconBuilding />,
+    title: 'ניהול נכסים מרכזי',
+    desc: 'כל הנכסים, התמונות, ההיסטוריית המחירים ומסמכי הנכס — מאורגנים ונגישים במקום אחד.',
+    points: ['העלאת תמונות בקליק אחד', 'מעקב שינויי מחיר אוטומטי', 'ממשק ניהול אינטואיטיבי'],
+  },
+  {
+    icon: <IconMessage />,
+    title: 'ניהול לידים חכם',
+    desc: 'פניות לקוחות מגיעות ישירות אליך, מקושרות לנכס הרלוונטי — ללא מייל, ללא בלבול.',
+    points: ['פניות מקושרות לנכס', 'התראות בזמן אמת', 'היסטוריית שיחות מלאה'],
+  },
+  {
+    icon: <IconLink />,
+    title: 'חוויית לקוח פרימיום',
+    desc: 'שלח ללקוחות קישור אישי ייחודי לצפייה בנכס — נקי, מקצועי, ובלי גישה למערכת.',
+    points: ['דף נכס מעוצב ללקוח', 'קישורים עם תוקף ומעקב', 'ממשק לקוח פרטי ואישי'],
+  },
+];
+
+const MOCK_PROPERTIES = [
+  {
+    title: 'פנטהאוז ים-תיכוני',
+    city: 'תל אביב, הטיילת',
+    price: '₪8,500,000',
+    beds: 5, baths: 4, sqm: 280,
+    tag: 'פעיל',
+    color: '#1a4a60',
+  },
+  {
+    title: 'וילה יוקרתית עם בריכה',
+    city: 'הרצליה פיתוח',
+    price: '₪12,200,000',
+    beds: 6, baths: 5, sqm: 480,
+    tag: 'פעיל',
+    color: '#122e3d',
+  },
+  {
+    title: 'דירת יוקרה במגדל',
+    city: 'רמת גן, בורסה',
+    price: '₪4,800,000',
+    beds: 4, baths: 3, sqm: 175,
+    tag: 'נמכר',
+    color: '#0e2530',
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    quote: 'T ESTATE שינה לחלוטין את הדרך שאנחנו מנהלים את המשרד. כל הנכסים, כל הלקוחות — הכל בסדר ובשליטה מלאה.',
+    name: 'יוסי כהן',
+    role: 'מנהל משרד תיווך, תל אביב',
+  },
+  {
+    quote: 'הלקוחות שלי מקבלים קישור אישי לנכס ונדהמים מהמקצועיות. זה בדיוק מה שחיפשתי.',
+    name: 'רחל לוי',
+    role: 'סוכנת נדל״ן, הרצליה',
+  },
+  {
+    quote: 'מערכת שמרגישה כמו כלי עבודה אמיתי, לא כמו תבנית גנרית. ממליץ לכל משרד ברצינות.',
+    name: 'דני אברהם',
+    role: 'מנהל פרויקטים, גבעתיים',
+  },
+];
+
+// ── Input style helper ────────────────────────────────────────────────────────
+const inputBase: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 14px',
+  background: 'rgba(6, 15, 20, 0.7)',
+  border: '1px solid rgba(46, 168, 223, 0.15)',
+  borderRadius: '8px',
+  color: 'var(--color-fg)',
+  fontSize: 'var(--text-base)',
+  lineHeight: 'var(--leading-normal)',
+  outline: 'none',
+  transition: 'border-color 0.18s ease',
+  fontFamily: 'inherit',
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+export default function LandingPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [orgName, setOrgName] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated) router.push('/dashboard');
+  }, [isAuthenticated, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setLoading(true);
     try {
       if (mode === 'login') {
         await signIn(email, password);
       } else {
-        await signUp(email, password, orgName, fullName);
+        const { needsEmailConfirmation } = await signUp(email, password, orgName, fullName);
+        if (needsEmailConfirmation) {
+          setSuccessMsg('החשבון נוצר בהצלחה! שלחנו אימייל אישור — לחץ על הקישור ואז חזור להתחבר.');
+          setMode('login');
+        }
       }
-      router.push('/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'אירעה שגיאה');
+      setError(err instanceof Error ? translateError(err.message) : 'אירעה שגיאה');
     } finally {
       setLoading(false);
     }
   }
 
+  function scrollToAuth() {
+    document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-4">
-      <ThreeBackground />
-      {/* Overlay gradient for depth */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050510]/40 via-transparent to-[#050510]/60 pointer-events-none z-10" />
-      <div className="relative z-20 w-full max-w-md">
-        {/* Logo / Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">T ESTATE</h1>
-          <p className="text-gray-400 mt-1">מערכת ניהול נכסי נדל״ן</p>
+    <div style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', minHeight: '100vh' }}>
+
+      {/* ── TOP NAV ─────────────────────────────────────────────────── */}
+      <nav style={{
+        position: 'fixed', top: 0, right: 0, left: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 40px', height: '60px',
+        background: 'rgba(6, 15, 20, 0.85)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(46,168,223,0.07)',
+      }}>
+        {/* Logo */}
+        <span style={{
+          fontSize: '1.0625rem',
+          fontWeight: 800,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'var(--color-fg)',
+          userSelect: 'none',
+        }}>
+          T<span style={{ color: 'var(--color-accent)' }}>·</span>ESTATE
+        </span>
+
+        {/* Nav links - desktop */}
+        <div className="hidden md:flex" style={{ gap: 32, alignItems: 'center' }}>
+          {[['#features', 'יתרונות'], ['#showcase', 'נכסים'], ['#testimonials', 'לקוחות']].map(([href, label]) => (
+            <a key={href} href={href} style={{
+              fontSize: 'var(--text-sm)',
+              fontWeight: 500,
+              color: 'var(--color-secondary)',
+              textDecoration: 'none',
+              transition: 'color 0.15s',
+            }}
+              onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--color-fg)'}
+              onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--color-secondary)'}
+            >{label}</a>
+          ))}
+          <button
+            onClick={scrollToAuth}
+            style={{
+              padding: '7px 20px',
+              background: 'transparent',
+              border: '1px solid rgba(46,168,223,0.3)',
+              borderRadius: '7px',
+              color: 'var(--color-accent)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'border-color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)';
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(46,168,223,0.07)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(46,168,223,0.3)';
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+            }}
+          >
+            כניסה
+          </button>
         </div>
+      </nav>
 
-        {/* Card */}
-        <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-8 border border-white/10 shadow-2xl">
-          {/* Tabs */}
-          <div className="flex mb-6 bg-gray-800 rounded-xl p-1">
-            <button
-              onClick={() => setMode('login')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'login' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              כניסה
-            </button>
-            <button
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'signup' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              הרשמה
-            </button>
+      {/* ── HERO SECTION ─────────────────────────────────────────────── */}
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+        <MapBackground />
+
+        <div style={{
+          position: 'relative', zIndex: 10,
+          width: '100%',
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '80px 40px 60px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 64,
+          flexWrap: 'wrap',
+        }}>
+
+          {/* ── Marketing copy (RTL: right side, first child) ── */}
+          <div style={{ flex: '1 1 420px', minWidth: 0 }} className="animate-fade-up">
+            <span className="section-label" style={{ display: 'block', marginBottom: 24 }}>
+              פלטפורמת הנדל״ן המתקדמת בישראל
+            </span>
+
+            <h1 style={{
+              fontSize: 'var(--text-hero)',
+              fontWeight: 800,
+              lineHeight: 1.08,
+              letterSpacing: '-0.025em',
+              color: 'var(--color-fg)',
+              marginBottom: 24,
+              maxWidth: '560px',
+            }}>
+              הדרך החכמה<br />
+              <span style={{ color: 'var(--color-accent)' }}>לשווק נדל״ן.</span>
+            </h1>
+
+            <p style={{
+              fontSize: 'var(--text-lg)',
+              fontWeight: 300,
+              lineHeight: 1.7,
+              color: 'var(--color-secondary)',
+              maxWidth: '480px',
+              marginBottom: 40,
+            }}>
+              מערכת פרימיום למשרדי נדל״ן וסוכנים — להצגת נכסים, ניהול לידים וחוויית לקוח ברמה הגבוהה ביותר.
+            </p>
+
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <button className="btn-primary" onClick={scrollToAuth} style={{ fontSize: '1rem' }}>
+                התחילו עכשיו
+                <IconArrow />
+              </button>
+              <a
+                href="#features"
+                className="btn-ghost"
+                style={{ textDecoration: 'none', fontSize: '1rem' }}
+              >
+                גלו עוד
+              </a>
+            </div>
+
+            {/* Social proof strip */}
+            <div style={{
+              marginTop: 48,
+              display: 'flex',
+              gap: 32,
+              alignItems: 'center',
+              borderTop: '1px solid var(--color-border-soft)',
+              paddingTop: 32,
+            }}>
+              {[['200+', 'משרדי תיווך'], ['4,800+', 'נכסים פעילים'], ['98%', 'שביעות רצון']].map(([num, label]) => (
+                <div key={label}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-fg)', lineHeight: 1 }}>{num}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-secondary)', marginTop: 4, fontWeight: 400 }}>{label}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">שם מלא</label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    required
-                    placeholder="ישראל ישראלי"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">שם המשרד / חברה</label>
-                  <input
-                    type="text"
-                    value={orgName}
-                    onChange={e => setOrgName(e.target.value)}
-                    required
-                    placeholder="משרד תיווך הדר"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">אימייל</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="agent@example.com"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">סיסמה</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-800 text-red-400 text-sm rounded-lg px-4 py-3">
-                {error}
+          {/* ── Auth card (RTL: left side, second child) ── */}
+          <div
+            id="auth-card"
+            className="card-glass animate-fade-up-delay-2"
+            style={{ flex: '0 0 380px', width: '100%', maxWidth: '420px', padding: '36px 32px' }}
+          >
+            {/* Card header */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+                {(['login', 'signup'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => { setMode(m); setError(''); setSuccessMsg(''); }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 0',
+                      background: mode === m ? 'var(--color-accent-bg)' : 'transparent',
+                      border: `1px solid ${mode === m ? 'rgba(46,168,223,0.25)' : 'transparent'}`,
+                      borderRadius: '7px',
+                      color: mode === m ? 'var(--color-accent)' : 'var(--color-muted)',
+                      fontSize: 'var(--text-sm)',
+                      fontWeight: mode === m ? 600 : 400,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {m === 'login' ? 'כניסה' : 'הרשמה'}
+                  </button>
+                ))}
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
-            >
-              {loading ? '...' : mode === 'login' ? 'כניסה למערכת' : 'יצירת חשבון'}
-            </button>
-          </form>
+              <h2 style={{
+                fontSize: 'var(--text-xl)',
+                fontWeight: 700,
+                color: 'var(--color-fg)',
+                marginBottom: 6,
+              }}>
+                {mode === 'login' ? 'ברוכים השבים' : 'צרו חשבון חינם'}
+              </h2>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)', fontWeight: 300 }}>
+                {mode === 'login'
+                  ? 'הכנס את פרטי החשבון שלך להמשך'
+                  : 'כמה שניות ואתם בפנים'}
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {mode === 'signup' && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-secondary)', marginBottom: 6 }}>
+                      שם מלא
+                    </label>
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      required
+                      placeholder="ישראל ישראלי"
+                      autoComplete="name"
+                      style={inputBase}
+                      onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.45)'}
+                      onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.15)'}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-secondary)', marginBottom: 6 }}>
+                      שם המשרד / חברה
+                    </label>
+                    <input
+                      type="text"
+                      value={orgName}
+                      onChange={e => setOrgName(e.target.value)}
+                      required
+                      placeholder="משרד תיווך הדר"
+                      autoComplete="organization"
+                      style={inputBase}
+                      onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.45)'}
+                      onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.15)'}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-secondary)', marginBottom: 6 }}>
+                  אימייל
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  placeholder="agent@example.com"
+                  dir="ltr"
+                  autoComplete="email"
+                  style={inputBase}
+                  onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.45)'}
+                  onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.15)'}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-secondary)' }}>
+                    סיסמה
+                  </label>
+                  {mode === 'login' && (
+                    <button type="button" style={{
+                      fontSize: 'var(--text-xs)', color: 'var(--color-muted)', background: 'none',
+                      border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit',
+                      transition: 'color 0.15s',
+                    }}
+                      onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--color-accent)'}
+                      onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--color-muted)'}
+                    >
+                      שכחתי סיסמה
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  placeholder="לפחות 6 תווים"
+                  dir="ltr"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={6}
+                  style={inputBase}
+                  onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.45)'}
+                  onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(46,168,223,0.15)'}
+                />
+              </div>
+
+              {successMsg && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--color-success-bg)',
+                  border: '1px solid rgba(61,214,140,0.2)',
+                  borderRadius: '8px',
+                  color: 'var(--color-success)',
+                  fontSize: 'var(--text-sm)',
+                  lineHeight: 1.5,
+                }}>
+                  {successMsg}
+                </div>
+              )}
+
+              {error && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--color-danger-bg)',
+                  border: '1px solid rgba(240,104,120,0.2)',
+                  borderRadius: '8px',
+                  color: 'var(--color-danger)',
+                  fontSize: 'var(--text-sm)',
+                  lineHeight: 1.5,
+                }}>
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ width: '100%', marginTop: 4 }}
+              >
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}/>
+                    טוען...
+                  </span>
+                ) : mode === 'login' ? 'כניסה למערכת' : 'יצירת חשבון'}
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+
+        {/* Bottom fade to next section */}
+        <div style={{
+          position: 'absolute', bottom: 0, right: 0, left: 0, height: 120,
+          background: 'linear-gradient(to bottom, transparent, var(--color-bg))',
+          pointerEvents: 'none', zIndex: 5,
+        }}/>
+      </section>
+
+      {/* ── FEATURES SECTION ─────────────────────────────────────────── */}
+      <section id="features" style={{ padding: '100px 40px', maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <span className="section-label" style={{ display: 'block', marginBottom: 16 }}>
+            למה T ESTATE
+          </span>
+          <h2 style={{
+            fontSize: 'var(--text-display)',
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: 'var(--color-fg)',
+          }}>
+            הכלים שסוכנים מקצועיים צריכים
+          </h2>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 24,
+        }}>
+          {FEATURES.map((f, i) => (
+            <div
+              key={i}
+              className="card-surface"
+              style={{
+                padding: '36px 32px',
+                transition: 'border-color 0.2s, transform 0.2s',
+                cursor: 'default',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(46,168,223,0.25)';
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: 48, height: 48,
+                background: 'var(--color-accent-bg)',
+                borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--color-accent)',
+                marginBottom: 24,
+              }}>
+                {f.icon}
+              </div>
+
+              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 12 }}>
+                {f.title}
+              </h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)', lineHeight: 1.65, marginBottom: 20 }}>
+                {f.desc}
+              </p>
+
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {f.points.map(pt => (
+                  <li key={pt} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: 'var(--color-accent-bg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--color-accent)', flexShrink: 0,
+                    }}>
+                      <IconCheck />
+                    </span>
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)', fontWeight: 400 }}>{pt}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PROPERTIES SHOWCASE ──────────────────────────────────────── */}
+      <section id="showcase" style={{
+        padding: '100px 40px',
+        background: `linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 50%, var(--color-bg) 100%)`,
+      }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 56, flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <span className="section-label" style={{ display: 'block', marginBottom: 12 }}>דוגמאות לנכסים</span>
+              <h2 style={{
+                fontSize: 'var(--text-display)',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+                color: 'var(--color-fg)',
+              }}>
+                נכסים שמשיגים תוצאות
+              </h2>
+            </div>
+            <button className="btn-ghost" onClick={scrollToAuth} style={{ whiteSpace: 'nowrap' }}>
+              הוסף נכס
+            </button>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 20,
+          }}>
+            {MOCK_PROPERTIES.map((p, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  border: '1px solid var(--color-border)',
+                  transition: 'border-color 0.2s, transform 0.2s',
+                  cursor: 'default',
+                  background: 'var(--color-surface)',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(46,168,223,0.3)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                }}
+              >
+                {/* Mock image placeholder */}
+                <div style={{
+                  height: 200,
+                  background: `linear-gradient(135deg, ${p.color} 0%, #060f14 100%)`,
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(46,168,223,0.25)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                  <div style={{
+                    position: 'absolute', top: 14, right: 14,
+                  }}>
+                    <span className={p.tag === 'פעיל' ? 'status-active' : 'status-sold'}>
+                      {p.tag}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ padding: '20px 20px 22px' }}>
+                  <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 4 }}>
+                    {p.title}
+                  </h3>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 16 }}>
+                    {p.city}
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '-0.01em' }}>
+                      {p.price}
+                    </span>
+                    <div style={{ display: 'flex', gap: 14 }}>
+                      {[
+                        [`${p.beds} חד׳`, null],
+                        [`${p.sqm} מ״ר`, null],
+                      ].map(([val]) => (
+                        <span key={val as string} style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 500 }}>
+                          {val}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ─────────────────────────────────────────────── */}
+      <section id="testimonials" style={{ padding: '100px 40px', maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <span className="section-label" style={{ display: 'block', marginBottom: 16 }}>לקוחות מדברים</span>
+          <h2 style={{
+            fontSize: 'var(--text-display)',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+            color: 'var(--color-fg)',
+          }}>
+            מה הלקוחות שלנו אומרים
+          </h2>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 20,
+        }}>
+          {TESTIMONIALS.map((t, i) => (
+            <div
+              key={i}
+              className="card-surface"
+              style={{ padding: '32px 28px' }}
+            >
+              {/* Quote mark */}
+              <div style={{
+                fontSize: 40,
+                lineHeight: 1,
+                color: 'var(--color-accent)',
+                opacity: 0.4,
+                fontWeight: 700,
+                marginBottom: 16,
+                fontFamily: 'Georgia, serif',
+              }}>
+                ״
+              </div>
+              <p style={{
+                fontSize: 'var(--text-base)',
+                color: 'var(--color-secondary)',
+                lineHeight: 1.7,
+                fontWeight: 300,
+                marginBottom: 24,
+              }}>
+                {t.quote}
+              </p>
+              <div style={{ borderTop: '1px solid var(--color-border-soft)', paddingTop: 20 }}>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-fg)' }}>{t.name}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 3 }}>{t.role}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FOOTER CTA ───────────────────────────────────────────────── */}
+      <section id="contact" style={{ padding: '80px 40px 60px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <span className="section-label" style={{ display: 'block', marginBottom: 20 }}>
+            מוכנים להתחיל?
+          </span>
+          <h2 style={{
+            fontSize: 'var(--text-display)',
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.12,
+            color: 'var(--color-fg)',
+            marginBottom: 20,
+          }}>
+            הצטרפו למשרדים המובילים
+          </h2>
+          <p style={{
+            fontSize: 'var(--text-lg)',
+            color: 'var(--color-secondary)',
+            fontWeight: 300,
+            lineHeight: 1.65,
+            marginBottom: 40,
+          }}>
+            ללא עלות בהתחלה. ללא כרטיס אשראי. ללא מחויבות.<br />
+            פשוט תנסו ותראו את ההבדל.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <button className="btn-primary" onClick={scrollToAuth} style={{ fontSize: '1.0625rem', padding: '14px 36px' }}>
+              התחילו עכשיו — חינם
+              <IconArrow />
+            </button>
+          </div>
+        </div>
+
+        {/* Footer bottom */}
+        <div style={{
+          marginTop: 80,
+          paddingTop: 32,
+          borderTop: '1px solid var(--color-border-soft)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+          maxWidth: 1280,
+          margin: '80px auto 0',
+        }}>
+          <span style={{
+            fontSize: '0.9375rem',
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--color-fg)',
+          }}>
+            T<span style={{ color: 'var(--color-accent)' }}>·</span>ESTATE
+          </span>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+            © 2026 T Estate. כל הזכויות שמורות.
+          </p>
+        </div>
+      </section>
+
     </div>
   );
 }

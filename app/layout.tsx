@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { Heebo } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
+const heebo = Heebo({
+  subsets: ['latin', 'hebrew'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-heebo',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: "T ESTATE — מערכת ניהול נכסים",
-  description: "פלטפורמה לניהול נכסי נדל״ן עבור סוכנים מקצועיים",
+  title: "T ESTATE — פלטפורמת הנדל״ן המתקדמת",
+  description: "מערכת פרימיום למשרדי נדל״ן וסוכנים — ניהול נכסים, לידים וחוויית לקוח ברמה הגבוהה ביותר",
 };
 
 export default function RootLayout({
@@ -13,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="he" dir="rtl">
-      <body className="bg-gray-950 text-white antialiased min-h-screen">
+    <html lang="he" dir="rtl" className={heebo.variable}>
+      <body className={heebo.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
