@@ -301,6 +301,8 @@ export default function LandingPage() {
   const [pubLoading, setPubLoading] = useState(true);
   const [pubSelected, setPubSelected] = useState<PublicProperty | null>(null);
   const [pubSearch, setPubSearch] = useState('');
+  const [pubCity, setPubCity] = useState('');
+  const [pubSort, setPubSort] = useState<'newest' | 'price_asc' | 'price_desc' | 'rooms_desc'>('newest');
   const [pubShowAll, setPubShowAll] = useState(false);
 
   const { signIn, signUp, isAuthenticated } = useAuth();
@@ -347,15 +349,32 @@ export default function LandingPage() {
     document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  const pubFiltered = pubProps.filter(p => {
-    const q = pubSearch.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      p.title.toLowerCase().includes(q) ||
-      p.city.toLowerCase().includes(q) ||
-      p.address.toLowerCase().includes(q)
-    );
-  });
+  // Unique cities for filter dropdown (trim whitespace to handle dirty DB data)
+  const pubCities = Array.from(new Set(pubProps.map(p => p.city?.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he'));
+
+  const pubFiltered = pubProps
+    .filter(p => {
+      const q = pubSearch.trim();
+      if (q) {
+        const ql = q.toLowerCase();
+        const matchesText =
+          p.title.toLowerCase().includes(ql) ||
+          p.title.includes(q) ||
+          (p.city?.trim()).toLowerCase().includes(ql) ||
+          (p.city?.trim()).includes(q) ||
+          p.address.toLowerCase().includes(ql) ||
+          p.address.includes(q);
+        if (!matchesText) return false;
+      }
+      if (pubCity && p.city?.trim() !== pubCity) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (pubSort === 'price_asc') return a.current_price - b.current_price;
+      if (pubSort === 'price_desc') return b.current_price - a.current_price;
+      if (pubSort === 'rooms_desc') return (b.property_details?.bedrooms ?? 0) - (a.property_details?.bedrooms ?? 0);
+      return 0; // 'newest' — API already orders by created_at desc
+    });
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', minHeight: '100vh' }}>
@@ -777,32 +796,125 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: pubProps.length > 0 ? 24 : 56, flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <span className="section-label" style={{ display: 'block', marginBottom: 12 }}>
-                {pubProps.length > 0 ? 'נכסים זמינים' : 'דוגמאות לנכסים'}
-              </span>
-              <h2 style={{ fontSize: 'var(--text-display)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--color-fg)' }}>
-                {pubProps.length > 0 ? 'נכסים פעילים בשוק' : 'נכסים שמשיגים תוצאות'}
-              </h2>
+          <div style={{ marginBottom: pubProps.length > 0 ? 20 : 56 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: pubProps.length > 0 ? 20 : 0 }}>
+              <div>
+                <span className="section-label" style={{ display: 'block', marginBottom: 12 }}>
+                  {pubProps.length > 0 ? 'נכסים זמינים' : 'דוגמאות לנכסים'}
+                </span>
+                <h2 style={{ fontSize: 'var(--text-display)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--color-fg)' }}>
+                  {pubProps.length > 0 ? 'נכסים פעילים בשוק' : 'נכסים שמשיגים תוצאות'}
+                </h2>
+              </div>
+              {pubProps.length === 0 && (
+                <button className="btn-ghost" onClick={scrollToAuth} style={{ whiteSpace: 'nowrap' }}>הוסף נכס</button>
+              )}
             </div>
-            {pubProps.length > 0 ? (
-              <input
-                type="text"
-                value={pubSearch}
-                onChange={e => { setPubSearch(e.target.value); setPubShowAll(false); }}
-                placeholder="חיפוש לפי עיר, כותרת..."
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 8, padding: '10px 16px',
-                  color: 'var(--color-fg)', fontSize: 'var(--text-sm)',
-                  outline: 'none', fontFamily: 'inherit',
-                  minWidth: 220, direction: 'rtl',
-                }}
-              />
-            ) : (
-              <button className="btn-ghost" onClick={scrollToAuth} style={{ whiteSpace: 'nowrap' }}>הוסף נכס</button>
+
+            {/* Search + Filter + Sort controls */}
+            {pubProps.length > 0 && (
+              <div style={{
+                display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center',
+                padding: '14px 16px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 12,
+              }}>
+                {/* Search input */}
+                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
+                  <svg
+                    width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-muted)', pointerEvents: 'none' }}
+                  >
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input
+                    type="text"
+                    value={pubSearch}
+                    onChange={e => { setPubSearch(e.target.value); setPubShowAll(false); }}
+                    placeholder="חיפוש חופשי — עיר, כותרת, כתובת..."
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: 'var(--color-surface-2)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 8, padding: '9px 36px 9px 12px',
+                      color: 'var(--color-fg)', fontSize: 'var(--text-sm)',
+                      outline: 'none', fontFamily: 'inherit', direction: 'rtl',
+                    }}
+                  />
+                  {pubSearch && (
+                    <button
+                      onClick={() => { setPubSearch(''); setPubShowAll(false); }}
+                      style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', padding: '2px 4px', lineHeight: 1, fontSize: 14 }}
+                      aria-label="נקה חיפוש"
+                    >✕</button>
+                  )}
+                </div>
+
+                {/* City / Area filter */}
+                {pubCities.length > 1 && (
+                  <select
+                    value={pubCity}
+                    onChange={e => { setPubCity(e.target.value); setPubShowAll(false); }}
+                    style={{
+                      flex: '0 1 160px',
+                      background: 'var(--color-surface-2)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 8, padding: '9px 12px',
+                      color: pubCity ? 'var(--color-fg)' : 'var(--color-muted)',
+                      fontSize: 'var(--text-sm)',
+                      outline: 'none', fontFamily: 'inherit', direction: 'rtl',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="">כל האזורים</option>
+                    {pubCities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Sort */}
+                <select
+                  value={pubSort}
+                  onChange={e => { setPubSort(e.target.value as typeof pubSort); setPubShowAll(false); }}
+                  style={{
+                    flex: '0 1 160px',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 8, padding: '9px 12px',
+                    color: 'var(--color-fg)',
+                    fontSize: 'var(--text-sm)',
+                    outline: 'none', fontFamily: 'inherit', direction: 'rtl',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="newest">חדשים ביותר</option>
+                  <option value="price_asc">מחיר: נמוך לגבוה</option>
+                  <option value="price_desc">מחיר: גבוה לנמוך</option>
+                  <option value="rooms_desc">חדרים: הרבה לפחות</option>
+                </select>
+
+                {/* Clear all filters */}
+                {(pubSearch || pubCity || pubSort !== 'newest') && (
+                  <button
+                    onClick={() => { setPubSearch(''); setPubCity(''); setPubSort('newest'); setPubShowAll(false); }}
+                    style={{
+                      flex: '0 0 auto',
+                      background: 'none', border: '1px solid var(--color-border)',
+                      borderRadius: 8, padding: '9px 14px',
+                      color: 'var(--color-muted)', fontSize: 'var(--text-sm)',
+                      cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                      transition: 'color 0.15s, border-color 0.15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-fg)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-fg)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'; }}
+                  >
+                    נקה הכל
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -813,8 +925,10 @@ export default function LandingPage() {
           ) : pubProps.length > 0 ? (
             <>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 24 }}>
-                {pubFiltered.length} נכסים פעילים
-                {pubSearch && ` · תוצאות עבור "${pubSearch}"`}
+                {pubFiltered.length} נכסים
+                {pubSearch && ` · חיפוש: "${pubSearch}"`}
+                {pubCity && ` · אזור: ${pubCity}`}
+                {pubSort !== 'newest' && ` · ממוין לפי: ${{ price_asc: 'מחיר עולה', price_desc: 'מחיר יורד', rooms_desc: 'חדרים' }[pubSort]}`}
               </p>
 
               {pubFiltered.length === 0 ? (
