@@ -62,6 +62,13 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   // Image upload
   const [uploading, setUploading] = useState(false);
 
+  // Facebook post generator
+  const [fbModalOpen, setFbModalOpen] = useState(false);
+  const [fbPostText, setFbPostText] = useState('');
+  const [fbGenerating, setFbGenerating] = useState(false);
+  const [fbError, setFbError] = useState<string | null>(null);
+  const [fbCopied, setFbCopied] = useState(false);
+
   const isAdmin = agent?.role === 'admin';
   const isOwn = property?.agent_id === agent?.id || isAdmin;
 
@@ -264,6 +271,33 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     return '₪' + p.toLocaleString('he-IL');
   }
 
+  async function generateFbPost() {
+    setFbGenerating(true);
+    setFbError(null);
+    setFbPostText('');
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/generate-post`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'שגיאה לא ידועה');
+      setFbPostText(json.text);
+    } catch (err) {
+      setFbError(err instanceof Error ? err.message : 'שגיאה ביצירת הטקסט');
+    } finally {
+      setFbGenerating(false);
+    }
+  }
+
+  function openFbModal() {
+    setFbModalOpen(true);
+    if (!fbPostText) generateFbPost();
+  }
+
+  function copyFbPost() {
+    navigator.clipboard.writeText(fbPostText);
+    setFbCopied(true);
+    setTimeout(() => setFbCopied(false), 2000);
+  }
+
   function imageUrl(path: string) {
     return `${SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
   }
@@ -388,6 +422,64 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
         </div>
       )}
 
+      {/* Facebook Post Modal */}
+      {fbModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white font-semibold text-lg">פוסט לפייסבוק</h2>
+              <button
+                onClick={() => setFbModalOpen(false)}
+                className="text-gray-500 hover:text-white transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {fbGenerating && (
+              <div className="flex items-center justify-center py-10 gap-3 text-gray-400 text-sm">
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                יוצר טקסט...
+              </div>
+            )}
+
+            {fbError && !fbGenerating && (
+              <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 text-red-400 text-sm">
+                {fbError}
+              </div>
+            )}
+
+            {fbPostText && !fbGenerating && (
+              <textarea
+                value={fbPostText}
+                onChange={e => setFbPostText(e.target.value)}
+                rows={10}
+                dir="rtl"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm leading-relaxed focus:outline-none focus:border-blue-500 resize-y"
+              />
+            )}
+
+            <div className="flex gap-2 pt-1">
+              {fbPostText && !fbGenerating && (
+                <button
+                  onClick={copyFbPost}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm transition-colors"
+                >
+                  {fbCopied ? '✓ הועתק' : 'העתק טקסט'}
+                </button>
+              )}
+              <button
+                onClick={generateFbPost}
+                disabled={fbGenerating}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {fbGenerating ? '...' : fbPostText ? 'צור מחדש' : 'צור טקסט'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -403,6 +495,12 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               {property.agents?.full_name}
             </span>
           )}
+          <button
+            onClick={openFbModal}
+            className="text-xs px-3 py-1.5 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 rounded-lg transition-colors"
+          >
+            צור פוסט לפייסבוק
+          </button>
           {isOwn && (
             <>
               <button
