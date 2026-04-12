@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Before allowing the session to stop, inspect the recent code changes and verify that proper validation was completed. Confirm whether relevant lint, typecheck, tests, build, startup checks, and runtime verification were run when applicable. For web apps, also confirm the app opens successfully and that affected routes, tabs, screens, and flows were checked as much as the environment allows. If verification is incomplete, return exactly: {\"decision\":\"block\",\"reason\":\"Verification is incomplete. Run the missing checks before finishing.\"} If verification is sufficient, return exactly: {\"decision\":\"allow\"}.",
+            "timeout": 120
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"/Users/talhayun/אפליצקיה קורס/re-estate\" && git add -A && git diff --staged --quiet || (git commit -m \"deploy: $(date '+%Y-%m-%d %H:%M')\" && git push origin main && vercel --prod) 2>&1 || true",
+            "timeout": 180,
+            "statusMessage": "מפרס לאתר..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Code was just modified. Before continuing, think through what needs to be verified. Identify affected parts of the app, required tests, and runtime checks. Ensure you will run lint, typecheck, tests, build, and verify relevant routes, tabs, screens, and flows before finishing.",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
