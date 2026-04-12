@@ -1,5 +1,10 @@
 'use client';
 
+// ─── Feature Flags ────────────────────────────────────────────────────────────
+// To re-enable the Facebook post generator: set FB_POST_ENABLED = true
+const FB_POST_ENABLED = false;
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -423,7 +428,7 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
       )}
 
       {/* Facebook Post Modal */}
-      {fbModalOpen && (
+      {FB_POST_ENABLED && fbModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg space-y-4">
             <div className="flex items-center justify-between">
@@ -495,12 +500,14 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               {property.agents?.full_name}
             </span>
           )}
-          <button
-            onClick={openFbModal}
-            className="text-xs px-3 py-1.5 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 rounded-lg transition-colors"
-          >
-            צור פוסט לפייסבוק
-          </button>
+          {FB_POST_ENABLED && (
+            <button
+              onClick={openFbModal}
+              className="text-xs px-3 py-1.5 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 rounded-lg transition-colors"
+            >
+              צור פוסט לפייסבוק
+            </button>
+          )}
           {isOwn && (
             <>
               <button
