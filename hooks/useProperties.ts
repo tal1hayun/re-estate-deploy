@@ -15,21 +15,24 @@ export function useProperties() {
   const [loading, setLoading] = useState(true);
 
   const fetchProperties = useCallback(async () => {
-    const { data } = await supabase
-      .from('properties')
-      .select(`
-        *,
-        agents(id, full_name, email, avatar_url),
-        property_details(*),
-        property_images(id, storage_path, is_cover, display_order)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const { data } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          agents(id, full_name, email, avatar_url),
+          property_details(*),
+          property_images(id, storage_path, is_cover, display_order)
+        `)
+        .order('created_at', { ascending: false });
 
-    setProperties(data || []);
-    setLoading(false);
+      setProperties(data || []);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchProperties(); }, [fetchProperties]);
+  useEffect(() => { fetchProperties(); }, [fetchProperties]); // eslint-disable-line react-hooks/set-state-in-effect
 
   async function createProperty(body: {
     title: string; address: string; city: string;

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'קישור לא תקין' }, { status: 404 });
   }
 
-  await admin.from('messages').insert({
+  const { error: msgErr } = await admin.from('messages').insert({
     property_id: link.property_id,
     shared_link_id: link.id,
     sender_type: 'client',
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     message_text: message_text.trim(),
     is_read: false,
   });
+
+  if (msgErr) return NextResponse.json({ error: msgErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

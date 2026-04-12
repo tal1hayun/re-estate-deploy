@@ -25,14 +25,14 @@ export default function MessagesPage() {
   const [groups, setGroups] = useState<ConversationGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchAllMessages(); }, []);
-
   async function fetchAllMessages() {
     const res = await fetch('/api/messages/all');
     const json = await res.json();
     setGroups(json.groups || []);
     setLoading(false);
   }
+
+  useEffect(() => { fetchAllMessages(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   function timeAgo(date: string) {
     const d = new Date(date);

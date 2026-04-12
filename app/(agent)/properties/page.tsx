@@ -22,6 +22,42 @@ function IconHome() {
   );
 }
 
+function TabGroup<T extends string>({ items, value, onChange }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div style={{
+      display: 'flex',
+      background: 'var(--color-surface)',
+      border: '1px solid var(--color-border)',
+      borderRadius: 8,
+      padding: 3,
+      gap: 2,
+    }}>
+      {items.map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => onChange(tab.key)}
+          style={{
+            padding: '5px 14px',
+            borderRadius: 6,
+            border: 'none',
+            background: value === tab.key ? 'var(--color-surface-3)' : 'transparent',
+            color: value === tab.key ? 'var(--color-fg)' : 'var(--color-muted)',
+            fontSize: 'var(--text-xs)',
+            fontWeight: value === tab.key ? 600 : 400,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            transition: 'all 0.15s',
+            letterSpacing: '0.02em',
+            borderBottom: value === tab.key ? '1px solid rgba(46,168,223,0.3)' : '1px solid transparent',
+          }}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function PropertiesPage() {
   const { agent } = useAuth();
   const isAdmin = agent?.role === 'admin';
@@ -49,7 +85,7 @@ export default function PropertiesPage() {
 
   const filterTabs: { key: 'all' | 'mine'; label: string }[] = [
     { key: 'all', label: 'כל הנכסים' },
-    { key: 'mine', label: 'הנכסים שלי' },
+    { key: 'mine', label: 'נכסים אישיים' },
   ];
 
   const statusTabs: { key: 'all' | 'active' | 'sold' | 'inactive'; label: string }[] = [
@@ -58,42 +94,6 @@ export default function PropertiesPage() {
     { key: 'sold', label: 'נמכר' },
     { key: 'inactive', label: 'לא פעיל' },
   ];
-
-  function TabGroup<T extends string>({ items, value, onChange }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void }) {
-    return (
-      <div style={{
-        display: 'flex',
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 8,
-        padding: 3,
-        gap: 2,
-      }}>
-        {items.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => onChange(tab.key)}
-            style={{
-              padding: '5px 14px',
-              borderRadius: 6,
-              border: 'none',
-              background: value === tab.key ? 'var(--color-surface-3)' : 'transparent',
-              color: value === tab.key ? 'var(--color-fg)' : 'var(--color-muted)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: value === tab.key ? 600 : 400,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.15s',
-              letterSpacing: '0.02em',
-              borderBottom: value === tab.key ? '1px solid rgba(46,168,223,0.3)' : '1px solid transparent',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
@@ -114,7 +114,7 @@ export default function PropertiesPage() {
             נכסים
           </h1>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 400 }}>
-            {filtered.length} נכסים{statusFilter !== 'all' ? ` · ${statusLabel[statusFilter]}` : ''}
+            {filtered.length} נכסים{filter === 'mine' ? ' · אישיים' : ''}{statusFilter !== 'all' ? ` · ${statusLabel[statusFilter]}` : ''}
           </p>
         </div>
         <Link

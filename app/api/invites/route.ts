@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, createAdminClient } from '@/lib/supabase-server';
+import { createServerClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
 
 function generateToken(orgId: string): string {

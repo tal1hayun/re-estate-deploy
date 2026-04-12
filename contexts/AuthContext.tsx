@@ -13,11 +13,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   async function fetchAgentData(userId: string) {
-    const { data } = await supabase
+    // Race the DB query against an 8-second timeout so a slow/hanging Supabase
+    // connection on Vercel cold-starts never blocks the loading state forever.
+    const queryPromise = supabase
       .from('agents')
       .select('*, organizations(*)')
       .eq('user_id', userId)
-      .single();
+      .single()
+      .then(({ data }) => data);
+
+    const timeoutPromise = new Promise<null>(resolve =>
+      setTimeout(() => resolve(null), 8000)
+    );
+
+    const data = await Promise.race([queryPromise, timeoutPromise]);
 
     if (data) {
       const { organizations: org, ...agentData } = data as Agent & { organizations: Organization };
@@ -28,15 +37,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      if (session?.user) {
-        setUser(session.user as AuthUser);
-        await fetchAgentData(session.user.id);
-      } else {
-        setUser(null);
-        setAgent(null);
-        setOrganization(null);
+      try {
+        if (session?.user) {
+          setUser(session.user as AuthUser);
+          await fetchAgentData(session.user.id);
+        } else {
+          setUser(null);
+          setAgent(null);
+          setOrganization(null);
+        }
+      } finally {
+        // Always release the loading state — even if fetchAgentData throws or times out.
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();

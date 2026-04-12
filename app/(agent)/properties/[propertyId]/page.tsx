@@ -65,31 +65,6 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const isAdmin = agent?.role === 'admin';
   const isOwn = property?.agent_id === agent?.id || isAdmin;
 
-  useEffect(() => {
-    fetchProperty();
-    fetchPriceHistory();
-    fetchSharedLinks();
-    fetchMessages();
-
-    // Realtime subscription for new messages
-    const channel = supabase
-      .channel(`messages:${propertyId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `property_id=eq.${propertyId}`,
-      }, payload => {
-        setMessages(prev => [...prev, payload.new as Message]);
-        if ((payload.new as Message).sender_type === 'client') {
-          setUnreadCount(c => c + 1);
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [propertyId]);
-
   async function fetchMessages() {
     const res = await fetch(`/api/messages/reply?property_id=${propertyId}`);
     const json = await res.json();
@@ -132,6 +107,55 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     setSharedLinks(data || []);
   }
 
+  async function fetchProperty() {
+    const { data } = await supabase
+      .from('properties')
+      .select(`
+        *,
+        agents(id, full_name, email, avatar_url),
+        property_details(*),
+        property_images(id, storage_path, is_cover, display_order)
+      `)
+      .eq('id', propertyId)
+      .single();
+    setProperty(data);
+    setLoading(false);
+  }
+
+  async function fetchPriceHistory() {
+    const { data } = await supabase
+      .from('price_history')
+      .select('*, agents(full_name)')
+      .eq('property_id', propertyId)
+      .order('changed_at', { ascending: false });
+    setPriceHistory(data || []);
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProperty();
+    fetchPriceHistory();
+    fetchSharedLinks();
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`messages:${propertyId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `property_id=eq.${propertyId}`,
+      }, payload => {
+        setMessages(prev => [...prev, payload.new as Message]);
+        if ((payload.new as Message).sender_type === 'client') {
+          setUnreadCount(c => c + 1);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [propertyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function createSharedLink() {
     setCreatingLink(true);
     const token = crypto.randomUUID().replace(/-/g, '');
@@ -159,30 +183,6 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     navigator.clipboard.writeText(`${window.location.origin}/client/${token}`);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  }
-
-  async function fetchProperty() {
-    const { data } = await supabase
-      .from('properties')
-      .select(`
-        *,
-        agents(id, full_name, email, avatar_url),
-        property_details(*),
-        property_images(id, storage_path, is_cover, display_order)
-      `)
-      .eq('id', propertyId)
-      .single();
-    setProperty(data);
-    setLoading(false);
-  }
-
-  async function fetchPriceHistory() {
-    const { data } = await supabase
-      .from('price_history')
-      .select('*, agents(full_name)')
-      .eq('property_id', propertyId)
-      .order('changed_at', { ascending: false });
-    setPriceHistory(data || []);
   }
 
   function openEditProperty() {

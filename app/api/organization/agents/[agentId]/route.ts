@@ -3,9 +3,11 @@ import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 
 type Params = { params: Promise<{ agentId: string }> };
 
-// DELETE /api/organization/agents/[agentId] — admin only
-export async function DELETE(_req: NextRequest, { params }: Params) {
+// DELETE /api/organization/agents/[agentId]?deleteProperties=true|false — admin only
+export async function DELETE(req: NextRequest, { params }: Params) {
   const { agentId } = await params;
+  const deleteProperties = new URL(req.url).searchParams.get('deleteProperties') === 'true';
+
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'לא מחובר' }, { status: 401 });
@@ -46,6 +48,29 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   if (targetAgent.role === 'admin') {
     return NextResponse.json({ error: 'לא ניתן להסיר מנהל' }, { status: 400 });
   }
+
+  if (deleteProperties) {
+    // Delete the agent's properties (shared_links cascade from properties via FK)
+    const { error: propErr } = await admin
+      .from('properties')
+      .delete()
+      .eq('agent_id', agentId);
+    if (propErr) return NextResponse.json({ error: propErr.message }, { status: 500 });
+  } else {
+    // Reassign properties to the calling admin
+    const { error: reassignErr } = await admin
+      .from('properties')
+      .update({ agent_id: callerAgent.id })
+      .eq('agent_id', agentId);
+    if (reassignErr) return NextResponse.json({ error: reassignErr.message }, { status: 500 });
+  }
+
+  // Delete any remaining shared_links by this agent (no CASCADE on agent_id FK)
+  const { error: linksErr } = await admin
+    .from('shared_links')
+    .delete()
+    .eq('agent_id', agentId);
+  if (linksErr) return NextResponse.json({ error: linksErr.message }, { status: 500 });
 
   const { error } = await admin
     .from('agents')

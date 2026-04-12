@@ -5,6 +5,33 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import MapBackground from '@/components/MapBackground';
 
+// ── Public Catalog Types ──────────────────────────────────────────────────────
+type PublicProperty = {
+  id: string;
+  title: string;
+  address: string;
+  city: string;
+  current_price: number;
+  organization_id: string;
+  organizations: { id: string; name: string } | null;
+  property_details: {
+    bedrooms?: number; bathrooms?: number;
+    built_size_sqm?: number; lot_size_sqm?: number;
+    has_garden?: boolean; has_pool?: boolean; has_balcony?: boolean;
+  } | null;
+  property_images: { id: string; storage_path: string; is_cover: boolean; display_order: number }[];
+};
+
+const PUB_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+function pubImgUrl(path: string) {
+  return `${PUB_SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
+}
+function pubFormatPrice(p: number) { return '₪' + p.toLocaleString('he-IL'); }
+function pubCover(images: PublicProperty['property_images']) {
+  if (!images?.length) return null;
+  return images.find(i => i.is_cover) || [...images].sort((a, b) => a.display_order - b.display_order)[0];
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function IconBuilding() {
   return (
@@ -120,6 +147,129 @@ const TESTIMONIALS = [
   },
 ];
 
+// ── Public Property Modal ─────────────────────────────────────────────────────
+function PublicPropertyModal({ property, onClose }: { property: PublicProperty; onClose: () => void }) {
+  const [activeImage, setActiveImage] = useState(0);
+  const [senderName, setSenderName] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const images = [...(property.property_images || [])].sort(
+    (a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0)
+  );
+  const d = property.property_details;
+
+  async function sendInquiry() {
+    if (!messageText.trim()) return;
+    setSending(true);
+    await fetch(`/api/org/${property.organization_id}/inquiry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: property.id, sender_name: senderName, message_text: messageText }),
+    });
+    setSending(false);
+    setSent(true);
+    setMessageText('');
+  }
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}
+    >
+      <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', direction: 'rtl' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 10 }}>
+          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-fg)' }}>{property.title}</span>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', fontSize: 20, lineHeight: 1, padding: '2px 6px', borderRadius: 6 }}>✕</button>
+        </div>
+
+        <div style={{ padding: 20 }}>
+          {/* Images */}
+          {images.length > 0 ? (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '16/9', background: 'var(--color-surface-2)', marginBottom: 8 }}>
+                <img src={pubImgUrl(images[activeImage].storage_path)} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                  {images.map((img, i) => (
+                    <button key={img.id} onClick={() => setActiveImage(i)} style={{ flexShrink: 0, width: 64, height: 44, borderRadius: 8, overflow: 'hidden', border: `2px solid ${activeImage === i ? 'var(--color-accent)' : 'transparent'}`, cursor: 'pointer', padding: 0, background: 'none', transition: 'border-color 0.15s' }}>
+                      <img src={pubImgUrl(img.storage_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ borderRadius: 12, aspectRatio: '16/9', background: 'var(--color-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 16 }}>🏠</div>
+          )}
+
+          {/* Price & Location */}
+          <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--color-accent)', marginBottom: 6 }}>{pubFormatPrice(property.current_price)}</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)' }}>{property.city} · {property.address}</div>
+            {property.organizations?.name && (
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 4 }}>{property.organizations.name}</div>
+            )}
+          </div>
+
+          {/* Specs */}
+          {d && (
+            <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 12 }}>מפרט הנכס</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {[
+                  { label: 'חדרים', value: d.bedrooms ? String(d.bedrooms) : null },
+                  { label: 'אמבטיה', value: d.bathrooms ? String(d.bathrooms) : null },
+                  { label: 'שטח בנוי', value: d.built_size_sqm ? `${d.built_size_sqm} מ"ר` : null },
+                  { label: 'שטח מגרש', value: d.lot_size_sqm ? `${d.lot_size_sqm} מ"ר` : null },
+                ].filter(x => x.value).map(item => (
+                  <div key={item.label} style={{ background: 'var(--color-surface-3)', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginBottom: 2 }}>{item.label}</div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-fg)' }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+              {(d.has_garden || d.has_balcony || d.has_pool) && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                  {d.has_garden && <span style={{ background: 'var(--color-success-bg)', color: 'var(--color-success)', fontSize: 'var(--text-xs)', padding: '3px 10px', borderRadius: 20 }}>גינה</span>}
+                  {d.has_balcony && <span style={{ background: 'var(--color-accent-bg)', color: 'var(--color-accent)', fontSize: 'var(--text-xs)', padding: '3px 10px', borderRadius: 20 }}>מרפסת</span>}
+                  {d.has_pool && <span style={{ background: 'rgba(34,211,238,0.08)', color: '#22d3ee', fontSize: 'var(--text-xs)', padding: '3px 10px', borderRadius: 20 }}>בריכה</span>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Inquiry Form */}
+          <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 14 }}>שלח הודעה לסוכן</div>
+            {sent ? (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+                <div style={{ color: 'var(--color-success)', fontWeight: 600, marginBottom: 4 }}>ההודעה נשלחה!</div>
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>הסוכן יחזור אליך בהקדם</div>
+                <button onClick={() => setSent(false)} style={{ color: 'var(--color-accent)', fontSize: 'var(--text-xs)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 10, fontFamily: 'inherit' }}>שלח הודעה נוספת</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input type="text" value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="השם שלך"
+                  style={{ background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', borderRadius: 8, padding: '10px 14px', color: 'var(--color-fg)', fontSize: 'var(--text-sm)', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
+                <textarea value={messageText} onChange={e => setMessageText(e.target.value)} rows={3} placeholder="כתוב הודעה לסוכן..."
+                  style={{ background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', borderRadius: 8, padding: '10px 14px', color: 'var(--color-fg)', fontSize: 'var(--text-sm)', outline: 'none', resize: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
+                <button onClick={sendInquiry} disabled={sending || !messageText.trim()} className="btn-primary" style={{ fontSize: 'var(--text-sm)', padding: '10px', opacity: (!messageText.trim() || sending) ? 0.5 : 1 }}>
+                  {sending ? 'שולח...' : 'שלח הודעה'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Input style helper ────────────────────────────────────────────────────────
 const inputBase: React.CSSProperties = {
   width: '100%',
@@ -146,12 +296,30 @@ export default function LandingPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Public catalog state
+  const [pubProps, setPubProps] = useState<PublicProperty[]>([]);
+  const [pubLoading, setPubLoading] = useState(true);
+  const [pubSelected, setPubSelected] = useState<PublicProperty | null>(null);
+  const [pubSearch, setPubSearch] = useState('');
+  const [pubShowAll, setPubShowAll] = useState(false);
+
   const { signIn, signUp, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (isAuthenticated) router.push('/dashboard');
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    fetch('/api/properties/public', { signal: controller.signal })
+      .then(r => r.json())
+      .then(d => { if (!d.error) setPubProps(d.properties || []); })
+      .catch(() => { /* silently fall back to mock properties */ })
+      .finally(() => { setPubLoading(false); clearTimeout(timer); });
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -178,6 +346,16 @@ export default function LandingPage() {
   function scrollToAuth() {
     document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+
+  const pubFiltered = pubProps.filter(p => {
+    const q = pubSearch.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      p.title.toLowerCase().includes(q) ||
+      p.city.toLowerCase().includes(q) ||
+      p.address.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', minHeight: '100vh' }}>
@@ -598,97 +776,149 @@ export default function LandingPage() {
         background: `linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 50%, var(--color-bg) 100%)`,
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 56, flexWrap: 'wrap', gap: 16 }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: pubProps.length > 0 ? 24 : 56, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <span className="section-label" style={{ display: 'block', marginBottom: 12 }}>דוגמאות לנכסים</span>
-              <h2 style={{
-                fontSize: 'var(--text-display)',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.15,
-                color: 'var(--color-fg)',
-              }}>
-                נכסים שמשיגים תוצאות
+              <span className="section-label" style={{ display: 'block', marginBottom: 12 }}>
+                {pubProps.length > 0 ? 'נכסים זמינים' : 'דוגמאות לנכסים'}
+              </span>
+              <h2 style={{ fontSize: 'var(--text-display)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: 'var(--color-fg)' }}>
+                {pubProps.length > 0 ? 'נכסים פעילים בשוק' : 'נכסים שמשיגים תוצאות'}
               </h2>
             </div>
-            <button className="btn-ghost" onClick={scrollToAuth} style={{ whiteSpace: 'nowrap' }}>
-              הוסף נכס
-            </button>
+            {pubProps.length > 0 ? (
+              <input
+                type="text"
+                value={pubSearch}
+                onChange={e => { setPubSearch(e.target.value); setPubShowAll(false); }}
+                placeholder="חיפוש לפי עיר, כותרת..."
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8, padding: '10px 16px',
+                  color: 'var(--color-fg)', fontSize: 'var(--text-sm)',
+                  outline: 'none', fontFamily: 'inherit',
+                  minWidth: 220, direction: 'rtl',
+                }}
+              />
+            ) : (
+              <button className="btn-ghost" onClick={scrollToAuth} style={{ whiteSpace: 'nowrap' }}>הוסף נכס</button>
+            )}
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: 20,
-          }}>
-            {MOCK_PROPERTIES.map((p, i) => (
-              <div
-                key={i}
-                style={{
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  border: '1px solid var(--color-border)',
-                  transition: 'border-color 0.2s, transform 0.2s',
-                  cursor: 'default',
-                  background: 'var(--color-surface)',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(46,168,223,0.3)';
-                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
-                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Mock image placeholder */}
-                <div style={{
-                  height: 200,
-                  background: `linear-gradient(135deg, ${p.color} 0%, #060f14 100%)`,
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(46,168,223,0.25)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                    <polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
-                  <div style={{
-                    position: 'absolute', top: 14, right: 14,
-                  }}>
-                    <span className={p.tag === 'פעיל' ? 'status-active' : 'status-sold'}>
-                      {p.tag}
-                    </span>
-                  </div>
-                </div>
+          {pubLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+              <div className="spinner" />
+            </div>
+          ) : pubProps.length > 0 ? (
+            <>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 24 }}>
+                {pubFiltered.length} נכסים פעילים
+                {pubSearch && ` · תוצאות עבור "${pubSearch}"`}
+              </p>
 
-                <div style={{ padding: '20px 20px 22px' }}>
-                  <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 4 }}>
-                    {p.title}
-                  </h3>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 16 }}>
-                    {p.city}
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '-0.01em' }}>
-                      {p.price}
-                    </span>
-                    <div style={{ display: 'flex', gap: 14 }}>
-                      {[
-                        [`${p.beds} חד׳`, null],
-                        [`${p.sqm} מ״ר`, null],
-                      ].map(([val]) => (
-                        <span key={val as string} style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 500 }}>
-                          {val}
-                        </span>
-                      ))}
+              {pubFiltered.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-muted)' }}>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+                  <p>לא נמצאו נכסים התואמים לחיפוש</p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+                  {(pubShowAll ? pubFiltered : pubFiltered.slice(0, 6)).map(p => {
+                    const cover = pubCover(p.property_images);
+                    const d = p.property_details;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setPubSelected(p)}
+                        style={{
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 14, overflow: 'hidden',
+                          cursor: 'pointer', textAlign: 'right',
+                          padding: 0, transition: 'border-color 0.2s, transform 0.15s',
+                          display: 'flex', flexDirection: 'column',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)';
+                          (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+                          (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                        }}
+                      >
+                        {/* Cover image */}
+                        <div style={{ width: '100%', aspectRatio: '16/10', background: 'var(--color-surface-2)', overflow: 'hidden', flexShrink: 0 }}>
+                          {cover ? (
+                            <img src={pubImgUrl(cover.storage_path)} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>🏠</div>
+                          )}
+                        </div>
+                        {/* Card body */}
+                        <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.3 }}>{p.title}</div>
+                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>{p.city} · {p.address}</div>
+                          {d && (d.bedrooms || d.bathrooms || d.built_size_sqm) && (
+                            <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--color-secondary)' }}>
+                              {d.bedrooms && <span>{d.bedrooms} חד׳</span>}
+                              {d.bathrooms && <span>{d.bathrooms} אמב׳</span>}
+                              {d.built_size_sqm && <span>{d.built_size_sqm} מ&quot;ר</span>}
+                            </div>
+                          )}
+                          <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid var(--color-border-soft)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-accent)' }}>
+                            {pubFormatPrice(p.current_price)}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!pubShowAll && pubFiltered.length > 6 && (
+                <div style={{ textAlign: 'center', marginTop: 32 }}>
+                  <button className="btn-ghost" onClick={() => setPubShowAll(true)}>
+                    הצג עוד {pubFiltered.length - 6} נכסים
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Fallback: mock properties when no real data in system */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+              {MOCK_PROPERTIES.map((p, i) => (
+                <div key={i}
+                  style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', transition: 'border-color 0.2s, transform 0.2s', cursor: 'default', background: 'var(--color-surface)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(46,168,223,0.3)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
+                >
+                  <div style={{ height: 200, background: `linear-gradient(135deg, ${p.color} 0%, #060f14 100%)`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(46,168,223,0.25)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    <div style={{ position: 'absolute', top: 14, right: 14 }}>
+                      <span className={p.tag === 'פעיל' ? 'status-active' : 'status-sold'}>{p.tag}</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: '20px 20px 22px' }}>
+                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 4 }}>{p.title}</h3>
+                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 16 }}>{p.city}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '-0.01em' }}>{p.price}</span>
+                      <div style={{ display: 'flex', gap: 14 }}>
+                        {[`${p.beds} חד׳`, `${p.sqm} מ״ר`].map(val => (
+                          <span key={val} style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 500 }}>{val}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -809,6 +1039,14 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* Property detail modal */}
+      {pubSelected && (
+        <PublicPropertyModal
+          property={pubSelected}
+          onClose={() => setPubSelected(null)}
+        />
+      )}
 
     </div>
   );
