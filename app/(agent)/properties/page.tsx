@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import type { PropertyImage } from '@/types';
@@ -18,6 +18,20 @@ function IconHome() {
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.18 }}>
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
       <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  );
+}
+function IconSearch() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  );
+}
+function IconX() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   );
 }
@@ -58,18 +72,62 @@ function TabGroup<T extends string>({ items, value, onChange }: { items: { key: 
   );
 }
 
+type SortKey = 'date-new' | 'date-old' | 'price-asc' | 'price-desc' | 'name';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'date-new', label: 'חדש ביותר' },
+  { key: 'date-old', label: 'ישן ביותר' },
+  { key: 'price-asc', label: 'מחיר: נמוך לגבוה' },
+  { key: 'price-desc', label: 'מחיר: גבוה לנמוך' },
+  { key: 'name', label: 'לפי שם' },
+];
+
 export default function PropertiesPage() {
   const { agent } = useAuth();
   const isAdmin = agent?.role === 'admin';
   const { properties, loading } = useProperties();
+
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'sold' | 'inactive'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('date-new');
 
-  const filtered = properties.filter(p => {
-    if (filter === 'mine' && p.agent_id !== agent?.id) return false;
-    if (statusFilter !== 'all' && p.status !== statusFilter) return false;
-    return true;
-  });
+  // Unique cities from all properties (trimmed to handle DB trailing spaces)
+  const cities = useMemo(() => {
+    const set = new Set(properties.map(p => p.city?.trim()).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'he'));
+  }, [properties]);
+
+  const filtered = useMemo(() => {
+    let result = properties.filter(p => {
+      if (filter === 'mine' && p.agent_id !== agent?.id) return false;
+      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+      if (cityFilter && p.city?.trim() !== cityFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const inTitle = p.title?.toLowerCase().includes(q);
+        const inCity = p.city?.toLowerCase().includes(q);
+        const inAddress = p.address?.toLowerCase().includes(q);
+        const inDesc = (p as { description?: string }).description?.toLowerCase().includes(q);
+        if (!inTitle && !inCity && !inAddress && !inDesc) return false;
+      }
+      return true;
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-asc': return a.current_price - b.current_price;
+        case 'price-desc': return b.current_price - a.current_price;
+        case 'name': return (a.title || '').localeCompare(b.title || '', 'he');
+        case 'date-old': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'date-new':
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return result;
+  }, [properties, filter, statusFilter, cityFilter, searchQuery, sortBy, agent?.id]);
 
   function formatPrice(price: number) {
     return '₪' + price.toLocaleString('he-IL');
@@ -95,13 +153,23 @@ export default function PropertiesPage() {
     { key: 'inactive', label: 'לא פעיל' },
   ];
 
+  const hasActiveFilters = searchQuery.trim() || cityFilter || filter !== 'all' || statusFilter !== 'all' || sortBy !== 'date-new';
+
+  function clearAllFilters() {
+    setSearchQuery('');
+    setCityFilter('');
+    setFilter('all');
+    setStatusFilter('all');
+    setSortBy('date-new');
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
 
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 32, flexWrap: 'wrap', gap: 16,
+        marginBottom: 28, flexWrap: 'wrap', gap: 16,
       }}>
         <div>
           <h1 style={{
@@ -114,7 +182,11 @@ export default function PropertiesPage() {
             נכסים
           </h1>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 400 }}>
-            {filtered.length} נכסים{filter === 'mine' ? ' · אישיים' : ''}{statusFilter !== 'all' ? ` · ${statusLabel[statusFilter]}` : ''}
+            {filtered.length} נכסים
+            {filter === 'mine' ? ' · אישיים' : ''}
+            {statusFilter !== 'all' ? ` · ${statusLabel[statusFilter]}` : ''}
+            {cityFilter ? ` · ${cityFilter}` : ''}
+            {searchQuery.trim() ? ` · "${searchQuery.trim()}"` : ''}
           </p>
         </div>
         <Link
@@ -127,7 +199,134 @@ export default function PropertiesPage() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {/* Search + City + Sort row */}
+      <div style={{
+        display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center',
+      }}>
+        {/* Search input */}
+        <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200, maxWidth: 400 }}>
+          <div style={{
+            position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--color-muted)', pointerEvents: 'none', display: 'flex',
+          }}>
+            <IconSearch />
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="חיפוש לפי שם, עיר, כתובת..."
+            style={{
+              width: '100%',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              padding: '8px 36px 8px 36px',
+              color: 'var(--color-fg)',
+              fontSize: 'var(--text-sm)',
+              outline: 'none',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s',
+              direction: 'rtl',
+            }}
+            onFocus={e => (e.target.style.borderColor = 'rgba(46,168,223,0.5)')}
+            onBlur={e => (e.target.style.borderColor = 'var(--color-border)')}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--color-muted)', display: 'flex', padding: 2, borderRadius: 4,
+              }}
+            >
+              <IconX />
+            </button>
+          )}
+        </div>
+
+        {/* City filter */}
+        {cities.length > 1 && (
+          <select
+            value={cityFilter}
+            onChange={e => setCityFilter(e.target.value)}
+            style={{
+              background: 'var(--color-surface)',
+              border: `1px solid ${cityFilter ? 'rgba(46,168,223,0.5)' : 'var(--color-border)'}`,
+              borderRadius: 8,
+              padding: '8px 12px',
+              color: cityFilter ? 'var(--color-fg)' : 'var(--color-muted)',
+              fontSize: 'var(--text-sm)',
+              outline: 'none',
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              direction: 'rtl',
+              minWidth: 130,
+            }}
+          >
+            <option value="">כל האזורים</option>
+            {cities.map(city => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Sort */}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as SortKey)}
+          style={{
+            background: 'var(--color-surface)',
+            border: `1px solid ${sortBy !== 'date-new' ? 'rgba(46,168,223,0.5)' : 'var(--color-border)'}`,
+            borderRadius: 8,
+            padding: '8px 12px',
+            color: 'var(--color-fg)',
+            fontSize: 'var(--text-sm)',
+            outline: 'none',
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            direction: 'rtl',
+            minWidth: 160,
+          }}
+        >
+          {SORT_OPTIONS.map(opt => (
+            <option key={opt.key} value={opt.key}>{opt.label}</option>
+          ))}
+        </select>
+
+        {/* Clear all */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              padding: '8px 12px',
+              color: 'var(--color-muted)',
+              fontSize: 'var(--text-xs)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-fg)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-fg)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+            }}
+          >
+            נקה הכל
+          </button>
+        )}
+      </div>
+
+      {/* Status + Owner Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
         <TabGroup items={filterTabs} value={filter} onChange={setFilter} />
         <TabGroup items={statusTabs} value={statusFilter} onChange={setStatusFilter} />
@@ -144,14 +343,26 @@ export default function PropertiesPage() {
             <IconHome />
           </div>
           <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8 }}>
-            אין נכסים עדיין
+            {properties.length === 0 ? 'אין נכסים עדיין' : 'לא נמצאו נכסים'}
           </h3>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginBottom: 28 }}>
-            הוסף את הנכס הראשון שלך
+            {properties.length === 0
+              ? 'הוסף את הנכס הראשון שלך'
+              : 'נסה לשנות את מסנני החיפוש'}
           </p>
-          <Link href="/properties/new" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex' }}>
-            הוסף נכס חדש
-          </Link>
+          {properties.length === 0 ? (
+            <Link href="/properties/new" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex' }}>
+              הוסף נכס חדש
+            </Link>
+          ) : (
+            <button
+              onClick={clearAllFilters}
+              className="btn-primary"
+              style={{ fontFamily: 'inherit', fontSize: 'var(--text-sm)' }}
+            >
+              נקה מסננים
+            </button>
+          )}
         </div>
       ) : (
         <div style={{

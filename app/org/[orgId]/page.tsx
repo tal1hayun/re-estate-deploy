@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useMemo, use } from 'react';
 import type { PropertyDetails, PropertyImage } from '@/types';
 
 type OrgProperty = {
@@ -10,6 +10,7 @@ type OrgProperty = {
   city: string;
   current_price: number;
   status: string;
+  created_at: string;
   property_details: PropertyDetails | null;
   property_images: PropertyImage[];
 };
@@ -30,6 +31,31 @@ function coverImage(images: PropertyImage[]) {
   if (!images?.length) return null;
   return images.find(i => i.is_cover) || images.sort((a, b) => a.display_order - b.display_order)[0];
 }
+
+function IconSearch() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  );
+}
+function IconX() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  );
+}
+
+type SortKey = 'date-new' | 'date-old' | 'price-asc' | 'price-desc' | 'name';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'date-new', label: 'חדש ביותר' },
+  { key: 'date-old', label: 'ישן ביותר' },
+  { key: 'price-asc', label: 'מחיר: נמוך לגבוה' },
+  { key: 'price-desc', label: 'מחיר: גבוה לנמוך' },
+  { key: 'name', label: 'לפי שם' },
+];
 
 // ── Property Detail Modal ─────────────────────────────────────────────────────
 
@@ -70,7 +96,6 @@ function PropertyModal({
     setMessageText('');
   }
 
-  // Close on backdrop click
   function onBackdrop(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose();
   }
@@ -304,6 +329,11 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
   const [error, setError] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<OrgProperty | null>(null);
 
+  // Search / Filter / Sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('date-new');
+
   useEffect(() => {
     fetch(`/api/org/${orgId}/properties`)
       .then(r => r.json())
@@ -314,6 +344,48 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
       })
       .catch(() => { setError('שגיאה בטעינת הנכסים'); setLoading(false); });
   }, [orgId]);
+
+  // Unique cities (trimmed to handle DB trailing spaces)
+  const cities = useMemo(() => {
+    const set = new Set(properties.map(p => p.city?.trim()).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'he'));
+  }, [properties]);
+
+  // Filtered + sorted properties
+  const filtered = useMemo(() => {
+    let result = properties.filter(p => {
+      if (cityFilter && p.city?.trim() !== cityFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const inTitle = p.title?.toLowerCase().includes(q);
+        const inCity = p.city?.toLowerCase().includes(q);
+        const inAddress = p.address?.toLowerCase().includes(q);
+        if (!inTitle && !inCity && !inAddress) return false;
+      }
+      return true;
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-asc': return a.current_price - b.current_price;
+        case 'price-desc': return b.current_price - a.current_price;
+        case 'name': return (a.title || '').localeCompare(b.title || '', 'he');
+        case 'date-old': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'date-new':
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return result;
+  }, [properties, cityFilter, searchQuery, sortBy]);
+
+  const hasActiveFilters = searchQuery.trim() || cityFilter || sortBy !== 'date-new';
+
+  function clearFilters() {
+    setSearchQuery('');
+    setCityFilter('');
+    setSortBy('date-new');
+  }
 
   if (loading) {
     return (
@@ -372,7 +444,7 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
         {/* Page Title */}
-        <div style={{ marginBottom: 36 }}>
+        <div style={{ marginBottom: 24 }}>
           <h1 style={{
             fontSize: 'var(--text-2xl)', fontWeight: 700,
             color: 'var(--color-fg)', letterSpacing: '-0.02em', marginBottom: 6,
@@ -380,18 +452,168 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
             נכסים זמינים
           </h1>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', fontWeight: 300 }}>
-            {properties.length} נכסים פעילים · {org.name}
+            {filtered.length === properties.length
+              ? `${properties.length} נכסים פעילים · ${org.name}`
+              : `${filtered.length} מתוך ${properties.length} נכסים · ${org.name}`}
           </p>
         </div>
 
+        {/* Search + Filter + Sort */}
+        <div style={{
+          display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center',
+        }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200, maxWidth: 420 }}>
+            <div style={{
+              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+              color: 'var(--color-muted)', pointerEvents: 'none', display: 'flex',
+            }}>
+              <IconSearch />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="חיפוש לפי שם, עיר, כתובת..."
+              style={{
+                width: '100%',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 10,
+                padding: '9px 36px 9px 36px',
+                color: 'var(--color-fg)',
+                fontSize: 'var(--text-sm)',
+                outline: 'none',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.15s',
+                direction: 'rtl',
+              }}
+              onFocus={e => (e.target.style.borderColor = 'rgba(46,168,223,0.5)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--color-border)')}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: 'var(--color-muted)', display: 'flex', padding: 2, borderRadius: 4,
+                }}
+              >
+                <IconX />
+              </button>
+            )}
+          </div>
+
+          {/* City filter */}
+          {cities.length > 1 && (
+            <select
+              value={cityFilter}
+              onChange={e => setCityFilter(e.target.value)}
+              style={{
+                background: 'var(--color-surface)',
+                border: `1px solid ${cityFilter ? 'rgba(46,168,223,0.5)' : 'var(--color-border)'}`,
+                borderRadius: 10,
+                padding: '9px 12px',
+                color: cityFilter ? 'var(--color-fg)' : 'var(--color-muted)',
+                fontSize: 'var(--text-sm)',
+                outline: 'none',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                direction: 'rtl',
+                minWidth: 130,
+              }}
+            >
+              <option value="">כל האזורים</option>
+              {cities.map(city => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortKey)}
+            style={{
+              background: 'var(--color-surface)',
+              border: `1px solid ${sortBy !== 'date-new' ? 'rgba(46,168,223,0.5)' : 'var(--color-border)'}`,
+              borderRadius: 10,
+              padding: '9px 12px',
+              color: 'var(--color-fg)',
+              fontSize: 'var(--text-sm)',
+              outline: 'none',
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              direction: 'rtl',
+              minWidth: 165,
+            }}
+          >
+            {SORT_OPTIONS.map(opt => (
+              <option key={opt.key} value={opt.key}>{opt.label}</option>
+            ))}
+          </select>
+
+          {/* Clear filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-border)',
+                borderRadius: 10,
+                padding: '9px 14px',
+                color: 'var(--color-muted)',
+                fontSize: 'var(--text-xs)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-fg)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-fg)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+              }}
+            >
+              נקה סינון
+            </button>
+          )}
+        </div>
+
         {/* Grid */}
-        {properties.length === 0 ? (
+        {filtered.length === 0 ? (
           <div style={{
             textAlign: 'center', padding: '80px 0',
             color: 'var(--color-muted)', fontSize: 'var(--text-sm)',
           }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
-            אין נכסים פעילים כרגע
+            {properties.length === 0
+              ? 'אין נכסים פעילים כרגע'
+              : 'לא נמצאו נכסים התואמים את החיפוש'}
+            {hasActiveFilters && (
+              <div style={{ marginTop: 16 }}>
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 8,
+                    padding: '8px 16px',
+                    color: 'var(--color-accent)',
+                    fontSize: 'var(--text-sm)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  נקה סינון
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{
@@ -399,7 +621,7 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: 20,
           }}>
-            {properties.map(p => {
+            {filtered.map(p => {
               const cover = coverImage(p.property_images);
               const d = p.property_details;
               return (
