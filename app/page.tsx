@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import MapBackground from '@/components/MapBackground';
+import HomeNavbar from '@/components/home/HomeNavbar';
+import HomeHero from '@/components/home/HomeHero';
 
 // ── Public Catalog Types ──────────────────────────────────────────────────────
 type PublicProperty = {
@@ -380,152 +381,18 @@ export default function LandingPage() {
     <div style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', minHeight: '100vh' }}>
 
       {/* ── TOP NAV ─────────────────────────────────────────────────── */}
-      <nav style={{
-        position: 'fixed', top: 0, right: 0, left: 0, zIndex: 50,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 40px', height: '60px',
-        background: 'rgba(6, 15, 20, 0.85)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(46,168,223,0.07)',
-      }}>
-        {/* Logo */}
-        <span style={{
-          fontSize: '1.0625rem',
-          fontWeight: 800,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--color-fg)',
-          userSelect: 'none',
-        }}>
-          T<span style={{ color: 'var(--color-accent)' }}>·</span>ESTATE
-        </span>
-
-        {/* Nav links - desktop */}
-        <div className="hidden md:flex" style={{ gap: 32, alignItems: 'center' }}>
-          {[['#features', 'יתרונות'], ['#showcase', 'נכסים'], ['#testimonials', 'לקוחות']].map(([href, label]) => (
-            <a key={href} href={href} style={{
-              fontSize: 'var(--text-sm)',
-              fontWeight: 500,
-              color: 'var(--color-secondary)',
-              textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-              onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--color-fg)'}
-              onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--color-secondary)'}
-            >{label}</a>
-          ))}
-          <button
-            onClick={scrollToAuth}
-            style={{
-              padding: '7px 20px',
-              background: 'transparent',
-              border: '1px solid rgba(46,168,223,0.3)',
-              borderRadius: '7px',
-              color: 'var(--color-accent)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'border-color 0.15s, background 0.15s',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)';
-              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(46,168,223,0.07)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(46,168,223,0.3)';
-              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-            }}
-          >
-            כניסה
-          </button>
-        </div>
-      </nav>
+      <HomeNavbar onLoginClick={scrollToAuth} />
 
       {/* ── HERO SECTION ─────────────────────────────────────────────── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-        <MapBackground />
+      <HomeHero />
 
-        <div style={{
-          position: 'relative', zIndex: 10,
-          width: '100%',
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '80px 40px 60px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 64,
-          flexWrap: 'wrap',
-        }}>
-
-          {/* ── Marketing copy (RTL: right side, first child) ── */}
-          <div style={{ flex: '1 1 420px', minWidth: 0 }} className="animate-fade-up">
-            <span className="section-label" style={{ display: 'block', marginBottom: 24 }}>
-              פלטפורמת הנדל״ן המתקדמת בישראל
-            </span>
-
-            <h1 style={{
-              fontSize: 'var(--text-hero)',
-              fontWeight: 800,
-              lineHeight: 1.08,
-              letterSpacing: '-0.025em',
-              color: 'var(--color-fg)',
-              marginBottom: 24,
-              maxWidth: '560px',
-            }}>
-              הדרך החכמה<br />
-              <span style={{ color: 'var(--color-accent)' }}>לשווק נדל״ן.</span>
-            </h1>
-
-            <p style={{
-              fontSize: 'var(--text-lg)',
-              fontWeight: 300,
-              lineHeight: 1.7,
-              color: 'var(--color-secondary)',
-              maxWidth: '480px',
-              marginBottom: 40,
-            }}>
-              מערכת פרימיום למשרדי נדל״ן וסוכנים — להצגת נכסים, ניהול לידים וחוויית לקוח ברמה הגבוהה ביותר.
-            </p>
-
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <button className="btn-primary" onClick={scrollToAuth} style={{ fontSize: '1rem' }}>
-                התחילו עכשיו
-                <IconArrow />
-              </button>
-              <a
-                href="#features"
-                className="btn-ghost"
-                style={{ textDecoration: 'none', fontSize: '1rem' }}
-              >
-                גלו עוד
-              </a>
-            </div>
-
-            {/* Social proof strip */}
-            <div style={{
-              marginTop: 48,
-              display: 'flex',
-              gap: 32,
-              alignItems: 'center',
-              borderTop: '1px solid var(--color-border-soft)',
-              paddingTop: 32,
-            }}>
-              {[['200+', 'משרדי תיווך'], ['4,800+', 'נכסים פעילים'], ['98%', 'שביעות רצון']].map(([num, label]) => (
-                <div key={label}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-fg)', lineHeight: 1 }}>{num}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-secondary)', marginTop: 4, fontWeight: 400 }}>{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Auth card (RTL: left side, second child) ── */}
-          <div
-            id="auth-card"
-            className="card-glass animate-fade-up-delay-2"
-            style={{ flex: '0 0 380px', width: '100%', maxWidth: '420px', padding: '36px 32px' }}
-          >
+      {/* ── AUTH SECTION ─────────────────────────────────────────────── */}
+      <section style={{ display: 'flex', justifyContent: 'center', padding: '0 40px 120px' }}>
+        <div
+          id="auth-card"
+          className="card-glass"
+          style={{ width: '100%', maxWidth: '420px', padding: '36px 32px' }}
+        >
             {/* Card header */}
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
@@ -701,14 +568,6 @@ export default function LandingPage() {
               </button>
             </form>
           </div>
-        </div>
-
-        {/* Bottom fade to next section */}
-        <div style={{
-          position: 'absolute', bottom: 0, right: 0, left: 0, height: 120,
-          background: 'linear-gradient(to bottom, transparent, var(--color-bg))',
-          pointerEvents: 'none', zIndex: 5,
-        }}/>
       </section>
 
       {/* ── FEATURES SECTION ─────────────────────────────────────────── */}
