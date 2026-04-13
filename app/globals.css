@@ -322,3 +322,41 @@ html { scroll-behavior: smooth; }
   to   { opacity: 1; }
 }
 .glow-wake { animation: glow-wake 2s ease-out 0.1s both; }
+
+/* ── Active nav link (app shell) ── */
+.nav-link-active { color: rgba(240, 244, 246, 0.88); }
+.nav-link-active::after { transform: scaleX(1); }
+.nav-link-active:hover { color: rgba(240, 244, 246, 0.88); }
+.nav-link-active:hover::after { transform: scaleX(1); }
+
+/* ── Internal home tile cards ── */
+.home-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 28px 24px;
+  background: rgba(10, 26, 34, 0.55);
+  border: 1px solid rgba(46, 168, 223, 0.07);
+  border-radius: 14px;
+  text-decoration: none;
+  min-height: 168px;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  cursor: pointer;
+}
+.home-tile:hover {
+  border-color: rgba(46, 168, 223, 0.18);
+  box-shadow: 0 0 36px rgba(46, 168, 223, 0.055);
+  background: rgba(10, 26, 34, 0.78);
+}
+.home-tile-icon {
+  width: 34px; height: 34px;
+  border: 1px solid rgba(46, 168, 223, 0.12);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(46, 168, 223, 0.45);
+  margin-bottom: 20px;
+  transition: border-color 0.22s ease, color 0.22s ease;
+}
+.home-tile:hover .home-tile-icon {
+  border-color: rgba(46, 168, 223, 0.26);
+  color: rgba(46, 168, 223, 0.75);
+}

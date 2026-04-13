@@ -5,57 +5,17 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
-function IconHome() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-  );
-}
-function IconGrid() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  );
-}
-function IconMessage() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-  );
-}
-function IconBuilding() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18z"/>
-      <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
-      <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
-    </svg>
-  );
-}
-function IconLogout() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/>
-      <line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-  );
-}
-
 const NAV_ITEMS = [
-  { href: '/dashboard',    label: 'ראשי',   icon: <IconHome /> },
-  { href: '/properties',   label: 'נכסים',  icon: <IconGrid /> },
-  { href: '/messages',     label: 'הודעות', icon: <IconMessage /> },
-  { href: '/organization', label: 'ארגון',  icon: <IconBuilding /> },
+  { href: '/home',         label: 'Home',       available: true  },
+  { href: '/properties',   label: 'Properties', available: true  },
+  { href: '/organization', label: 'Agents',     available: true  },
+  { href: '/messages',     label: 'Messages',   available: true  },
+  { href: '#',             label: 'Offers',     available: false },
+  { href: '#',             label: 'Analytics',  available: false },
 ];
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
-  const { user, agent, organization, isLoading, signOut } = useAuth();
+  const { user, agent, isLoading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -66,117 +26,158 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
-        <div className="spinner"/>
+        <div className="spinner" />
       </div>
     );
   }
 
+  const agentInitial =
+    agent?.full_name?.[0]?.toUpperCase() ??
+    user?.email?.[0]?.toUpperCase() ??
+    '?';
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
 
-      <header style={{
-        background: 'var(--color-surface)',
-        borderBottom: '1px solid var(--color-border)',
-        padding: '0 32px',
-        height: 56,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontSize: '0.875rem',
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--color-fg)',
-              whiteSpace: 'nowrap',
-            }}>
-              T<span style={{ color: 'var(--color-accent)' }}>·</span>ESTATE
+      {/* ── Premium nav bar ── */}
+      <header
+        dir="ltr"
+        style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          height: 52,
+          padding: '0 48px',
+          background: 'rgba(6, 15, 20, 0.92)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(46, 168, 223, 0.06)',
+        }}
+      >
+        {/* Logo → links to /home */}
+        <Link href="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', userSelect: 'none' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 200, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(240, 244, 246, 0.55)' }}>
+              re
             </span>
-          </Link>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 200, color: 'var(--color-accent)', opacity: 0.5, margin: '0 1px', letterSpacing: 0 }}>
+              ·
+            </span>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(240, 244, 246, 0.92)' }}>
+              estate
+            </span>
+          </div>
+          <span
+            className="dot-live"
+            style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: 'var(--color-success)', flexShrink: 0 }}
+          />
+        </Link>
 
-          <nav style={{ display: 'flex', alignItems: 'center' }}>
-            {NAV_ITEMS.map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        {/* Logo → nav separator */}
+        <div style={{ marginLeft: 20, width: 1, height: 16, background: 'rgba(46, 168, 223, 0.08)', flexShrink: 0 }} />
+
+        {/* Nav items — centered */}
+        <nav style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 40 }}>
+          {NAV_ITEMS.map(item => {
+            if (!item.available) {
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
+                <span
+                  key={item.label}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '0 12px',
-                    height: 56,
-                    textDecoration: 'none',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? 'var(--color-accent)' : 'var(--color-secondary)',
-                    borderBottom: `2px solid ${isActive ? 'var(--color-accent)' : 'transparent'}`,
-                    transition: 'color 0.15s, border-color 0.15s',
-                    boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    fontSize: '0.8125rem', fontWeight: 300,
+                    color: 'rgba(122, 154, 170, 0.2)',
+                    letterSpacing: '0.005em',
+                    userSelect: 'none', cursor: 'default',
                   }}
                 >
-                  <span style={{ opacity: isActive ? 1 : 0.65 }}>{item.icon}</span>
-                  <span className="hidden sm:block">{item.label}</span>
-                </Link>
+                  {item.label}
+                  <span style={{
+                    fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.06em',
+                    textTransform: 'uppercase', color: 'rgba(46, 168, 223, 0.25)',
+                    border: '1px solid rgba(46, 168, 223, 0.12)',
+                    borderRadius: 3, padding: '1px 4px', lineHeight: 1.4,
+                  }}>
+                    soon
+                  </span>
+                </span>
               );
-            })}
-          </nav>
-        </div>
+            }
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {organization && (
-            <span className="hidden md:block" style={{
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-muted)',
-              fontWeight: 500,
-              letterSpacing: '0.04em',
-            }}>
-              {organization.name}
-            </span>
-          )}
-          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-secondary)', fontWeight: 500 }}>
-            {agent?.full_name?.split(' ')[0]}
-          </span>
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/home' && pathname.startsWith(item.href + '/'));
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`nav-link${isActive ? ' nav-link-active' : ''}`}
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: isActive ? 500 : 300,
+                  textDecoration: 'none',
+                  letterSpacing: '0.005em',
+                  padding: '4px 0',
+                  userSelect: 'none',
+                }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Nav → user area separator */}
+        <div style={{ marginRight: 14, width: 1, height: 16, background: 'rgba(46, 168, 223, 0.08)', flexShrink: 0 }} />
+
+        {/* User area */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <button
             onClick={signOut}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '5px 11px',
+              padding: '5px 14px',
               background: 'transparent',
-              border: '1px solid var(--color-border)',
-              borderRadius: 6,
-              color: 'var(--color-muted)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'color 0.15s, border-color 0.15s',
+              border: '1px solid rgba(46, 168, 223, 0.1)',
+              borderRadius: 5,
+              color: 'rgba(122, 154, 170, 0.45)',
+              fontSize: '0.75rem', fontWeight: 400,
+              cursor: 'pointer', fontFamily: 'inherit',
+              letterSpacing: '0.05em',
+              transition: 'border-color 0.18s, color 0.18s',
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-danger)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(240,104,120,0.3)';
+              e.currentTarget.style.borderColor = 'rgba(240, 104, 120, 0.25)';
+              e.currentTarget.style.color = 'rgba(240, 104, 120, 0.65)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+              e.currentTarget.style.borderColor = 'rgba(46, 168, 223, 0.1)';
+              e.currentTarget.style.color = 'rgba(122, 154, 170, 0.45)';
             }}
           >
-            <IconLogout />
-            <span className="hidden sm:block">יציאה</span>
+            Sign out
           </button>
+
+          {/* Agent avatar */}
+          <div style={{
+            width: 26, height: 26,
+            borderRadius: '50%',
+            background: 'rgba(46, 168, 223, 0.08)',
+            border: '1px solid rgba(46, 168, 223, 0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: '0.625rem', fontWeight: 500, color: 'rgba(46, 168, 223, 0.75)', lineHeight: 1 }}>
+              {agentInitial}
+            </span>
+          </div>
         </div>
       </header>
 
-      <main style={{ flex: 1 }}>
+      {/* Page content — below fixed nav */}
+      <main style={{ paddingTop: 52 }}>
         {children}
       </main>
     </div>
