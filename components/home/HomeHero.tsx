@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-const QUICK_ACTIONS = ['Active Listings', 'Pending Review', 'New Leads', 'My Portfolio'];
+const QUICK_ACTIONS = ['active listings', 'pending review', 'new leads', 'my portfolio'];
 
 export default function HomeHero() {
   const [query, setQuery] = useState('');
@@ -117,15 +117,15 @@ export default function HomeHero() {
 
         {/* Tagline – context, not marketing */}
         <p className="hero-e1" style={{
-          fontSize: '0.8125rem',
+          fontSize: '0.75rem',
           fontWeight: 300,
-          color: 'rgba(240, 244, 246, 0.22)',
-          letterSpacing: '-0.01em',
+          color: 'rgba(240, 244, 246, 0.28)',
+          letterSpacing: '0.06em',
           margin: '0 0 36px',
           textAlign: 'center',
           lineHeight: 1,
         }}>
-          Your network, in one place.
+          From listing to close.
         </p>
 
         {/* Search bar with ambient glow wrapper */}
