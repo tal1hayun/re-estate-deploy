@@ -85,4 +85,15 @@ test.describe('Auth redirect', () => {
     await expect(page.locator('body')).toBeVisible();
     expect(errors, `Page crashed: ${errors.join(', ')}`).toHaveLength(0);
   });
+
+  test('/home redirects unauthenticated users to homepage', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', err => errors.push(err.message));
+
+    await page.goto('/home');
+    // Should end up at / (redirected by InternalHomePage auth guard)
+    await page.waitForURL('/', { timeout: 5000 });
+    await expect(page.locator('body')).toBeVisible();
+    expect(errors, `Page crashed: ${errors.join(', ')}`).toHaveLength(0);
+  });
 });
