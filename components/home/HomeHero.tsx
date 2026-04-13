@@ -34,29 +34,52 @@ export default function HomeHero() {
         overflow: 'hidden',
       }}
     >
-      {/* Grid – slightly quieter */}
+      {/* Layer 0 – Grid */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
           backgroundImage: [
-            'linear-gradient(rgba(46, 168, 223, 0.028) 1px, transparent 1px)',
-            'linear-gradient(90deg, rgba(46, 168, 223, 0.028) 1px, transparent 1px)',
+            'linear-gradient(rgba(46, 168, 223, 0.026) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(46, 168, 223, 0.026) 1px, transparent 1px)',
           ].join(', '),
           backgroundSize: '56px 56px',
           zIndex: 0,
         }}
       />
 
-      {/* Radial vignette */}
+      {/* Layer 1 – Ambient center glow (where search lives) */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse 52% 28% at 50% 56%, rgba(46, 168, 223, 0.048) 0%, transparent 100%)',
+          zIndex: 1,
+        }}
+      />
+
+      {/* Layer 2 – Radial vignette (fades grid toward edges) */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
           background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 10%, var(--color-bg) 100%)',
-          zIndex: 1,
+          zIndex: 2,
+        }}
+      />
+
+      {/* Layer 3 – Depth gradient (top/bottom darkening for depth) */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to bottom, rgba(4, 8, 12, 0.22) 0%, transparent 18%, transparent 82%, rgba(4, 8, 12, 0.15) 100%)',
+          zIndex: 3,
+          pointerEvents: 'none',
         }}
       />
 
@@ -64,7 +87,7 @@ export default function HomeHero() {
       <div
         style={{
           position: 'relative',
-          zIndex: 2,
+          zIndex: 10,
           width: '100%',
           maxWidth: 760,
           padding: '0 40px',
@@ -76,23 +99,23 @@ export default function HomeHero() {
       >
         {/* Eyebrow – precise and quiet */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
-          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
+          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
           <h1 style={{
             fontSize: '0.625rem',
             fontWeight: 500,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
             color: 'var(--color-accent)',
-            opacity: 0.45,
+            opacity: 0.42,
             margin: 0,
           }}>
             Property Network
           </h1>
-          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
+          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
         </div>
 
-        {/* Search bar – large, commanding */}
-        <div style={{ width: '100%', position: 'relative' }}>
+        {/* Search bar with ambient glow wrapper */}
+        <div className="search-glow" style={{ width: '100%', position: 'relative' }}>
 
           {/* Search icon */}
           <div
@@ -102,7 +125,7 @@ export default function HomeHero() {
               left: 24,
               top: '50%',
               transform: 'translateY(-50%)',
-              color: focused ? 'rgba(46, 168, 223, 0.55)' : 'rgba(46, 168, 223, 0.22)',
+              color: focused ? 'rgba(46, 168, 223, 0.55)' : 'rgba(46, 168, 223, 0.2)',
               transition: 'color 0.25s',
               pointerEvents: 'none',
               display: 'flex',
@@ -127,8 +150,10 @@ export default function HomeHero() {
               width: '100%',
               height: 68,
               padding: '0 92px 0 58px',
-              background: 'var(--color-surface)',
-              border: `1px solid ${focused ? 'rgba(46, 168, 223, 0.28)' : 'rgba(46, 168, 223, 0.09)'}`,
+              background: focused
+                ? 'rgba(10, 26, 34, 1)'
+                : 'rgba(10, 26, 34, 0.92)',
+              border: `1px solid ${focused ? 'rgba(46, 168, 223, 0.3)' : 'rgba(46, 168, 223, 0.09)'}`,
               borderRadius: 12,
               color: 'var(--color-fg)',
               fontSize: '1rem',
@@ -136,10 +161,10 @@ export default function HomeHero() {
               fontFamily: 'inherit',
               letterSpacing: '-0.01em',
               outline: 'none',
-              transition: 'border-color 0.25s, box-shadow 0.25s',
+              transition: 'border-color 0.25s, box-shadow 0.25s, background 0.25s',
               boxShadow: focused
-                ? '0 0 0 4px rgba(46, 168, 223, 0.055), 0 20px 60px rgba(0,0,0,0.5)'
-                : '0 8px 40px rgba(0,0,0,0.4)',
+                ? '0 0 0 4px rgba(46, 168, 223, 0.055), inset 0 1px 2px rgba(0,0,0,0.4)'
+                : 'inset 0 1px 2px rgba(0,0,0,0.3)',
             }}
           />
 
@@ -168,7 +193,7 @@ export default function HomeHero() {
                     background: 'rgba(10, 26, 34, 0.7)',
                     border: '1px solid rgba(46, 168, 223, 0.07)',
                     borderRadius: 4,
-                    color: 'rgba(46, 168, 223, 0.22)',
+                    color: 'rgba(46, 168, 223, 0.2)',
                     fontSize: '0.625rem',
                     fontFamily: 'inherit',
                     lineHeight: 1.5,
@@ -182,7 +207,7 @@ export default function HomeHero() {
           )}
         </div>
 
-        {/* Quick actions – commands, not buttons */}
+        {/* Quick actions – commands separated by dots */}
         <div style={{
           marginTop: 24,
           display: 'flex',
@@ -192,14 +217,14 @@ export default function HomeHero() {
         }}>
           {QUICK_ACTIONS.map((label, i) => (
             <span key={label} style={{ display: 'flex', alignItems: 'center' }}>
-              <QuickAction label={label} />
+              <button className="quick-action">{label}</button>
               {i < QUICK_ACTIONS.length - 1 && (
                 <span
                   aria-hidden
                   style={{
-                    color: 'rgba(46, 168, 223, 0.1)',
+                    color: 'rgba(46, 168, 223, 0.09)',
                     fontSize: '0.75rem',
-                    padding: '0 4px',
+                    padding: '0 2px',
                     userSelect: 'none',
                   }}
                 >
@@ -211,30 +236,5 @@ export default function HomeHero() {
         </div>
       </div>
     </section>
-  );
-}
-
-function QuickAction({ label }: { label: string }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        padding: '5px 10px',
-        background: 'transparent',
-        border: 'none',
-        color: hovered ? 'rgba(240, 244, 246, 0.6)' : 'rgba(122, 154, 170, 0.38)',
-        fontSize: '0.75rem',
-        fontWeight: 400,
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        letterSpacing: '0.015em',
-        transition: 'color 0.2s',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </button>
   );
 }
