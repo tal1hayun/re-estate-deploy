@@ -309,3 +309,20 @@ html { scroll-behavior: smooth; }
 .search-glow:focus-within {
   filter: drop-shadow(0 0 44px rgba(46, 168, 223, 0.13));
 }
+
+/* ── Hero entry cascade ── */
+@keyframes hero-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-e0 { animation: hero-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+.hero-e1 { animation: hero-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+.hero-e2 { animation: hero-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both; }
+.hero-e3 { animation: hero-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.36s both; }
+
+/* ── Ambient glow wake (system "powering on") ── */
+@keyframes glow-wake {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.glow-wake { animation: glow-wake 2s ease-out 0.1s both; }

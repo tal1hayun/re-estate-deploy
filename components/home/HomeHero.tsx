@@ -49,9 +49,10 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Layer 1 – Ambient center glow (where search lives) */}
+      {/* Layer 1 – Ambient center glow (where search lives) — fades in on load */}
       <div
         aria-hidden
+        className="glow-wake"
         style={{
           position: 'absolute',
           inset: 0,
@@ -98,7 +99,7 @@ export default function HomeHero() {
         }}
       >
         {/* Eyebrow – precise and quiet */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
+        <div className="hero-e0" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
           <h1 style={{
             fontSize: '0.625rem',
@@ -114,8 +115,21 @@ export default function HomeHero() {
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
         </div>
 
+        {/* Tagline – context, not marketing */}
+        <p className="hero-e1" style={{
+          fontSize: '0.8125rem',
+          fontWeight: 300,
+          color: 'rgba(240, 244, 246, 0.22)',
+          letterSpacing: '-0.01em',
+          margin: '0 0 36px',
+          textAlign: 'center',
+          lineHeight: 1,
+        }}>
+          Your network, in one place.
+        </p>
+
         {/* Search bar with ambient glow wrapper */}
-        <div className="search-glow" style={{ width: '100%', position: 'relative' }}>
+        <div className="search-glow hero-e2" style={{ width: '100%', position: 'relative' }}>
 
           {/* Search icon */}
           <div
@@ -208,7 +222,7 @@ export default function HomeHero() {
         </div>
 
         {/* Quick actions – commands separated by dots */}
-        <div style={{
+        <div className="hero-e3" style={{
           marginTop: 24,
           display: 'flex',
           alignItems: 'center',
