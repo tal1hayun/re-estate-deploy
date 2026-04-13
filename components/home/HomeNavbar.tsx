@@ -18,37 +18,45 @@ export default function HomeNavbar({ onLoginClick }: Props) {
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
-        height: 56,
-        padding: '0 40px',
-        background: 'rgba(6, 15, 20, 0.82)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(46, 168, 223, 0.07)',
+        height: 52,
+        padding: '0 48px',
+        background: 'rgba(6, 15, 20, 0.85)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(46, 168, 223, 0.06)',
       }}
     >
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
         <span style={{
-          fontSize: '0.9375rem',
-          fontWeight: 700,
-          letterSpacing: '0.06em',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
           textTransform: 'uppercase',
           color: 'var(--color-fg)',
           userSelect: 'none',
+          opacity: 0.92,
         }}>
           re
-          <span style={{ color: 'var(--color-accent)', fontWeight: 300, fontSize: '1.15em', letterSpacing: 0 }}>·</span>
+          <span style={{
+            color: 'var(--color-accent)',
+            fontWeight: 200,
+            fontSize: '1.2em',
+            letterSpacing: 0,
+            opacity: 0.7,
+          }}>·</span>
           estate
         </span>
-        {/* Live pulse */}
+        {/* Live indicator */}
         <span style={{
           display: 'inline-block',
-          width: 5,
-          height: 5,
+          width: 4,
+          height: 4,
           borderRadius: '50%',
           background: 'var(--color-success)',
-          boxShadow: '0 0 6px var(--color-success)',
+          boxShadow: '0 0 5px var(--color-success)',
           flexShrink: 0,
+          opacity: 0.8,
         }} />
       </div>
 
@@ -58,7 +66,7 @@ export default function HomeNavbar({ onLoginClick }: Props) {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 36,
+        gap: 48,
       }}>
         {NAV_ITEMS.map(item => (
           <NavItem key={item} label={item} />
@@ -66,31 +74,31 @@ export default function HomeNavbar({ onLoginClick }: Props) {
       </div>
 
       {/* User area – right */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
         <button
           onClick={onLoginClick}
           style={{
-            padding: '6px 18px',
+            padding: '5px 16px',
             background: 'transparent',
-            border: '1px solid rgba(46, 168, 223, 0.22)',
-            borderRadius: 6,
-            color: 'var(--color-secondary)',
-            fontSize: 'var(--text-sm)',
+            border: '1px solid rgba(46, 168, 223, 0.18)',
+            borderRadius: 5,
+            color: 'rgba(122, 154, 170, 0.7)',
+            fontSize: '0.75rem',
             fontWeight: 400,
             cursor: 'pointer',
             fontFamily: 'inherit',
-            letterSpacing: '-0.01em',
+            letterSpacing: '0.04em',
             transition: 'border-color 0.15s, color 0.15s',
           }}
           onMouseEnter={e => {
             const el = e.currentTarget;
-            el.style.borderColor = 'rgba(46, 168, 223, 0.5)';
+            el.style.borderColor = 'rgba(46, 168, 223, 0.4)';
             el.style.color = 'var(--color-fg)';
           }}
           onMouseLeave={e => {
             const el = e.currentTarget;
-            el.style.borderColor = 'rgba(46, 168, 223, 0.22)';
-            el.style.color = 'var(--color-secondary)';
+            el.style.borderColor = 'rgba(46, 168, 223, 0.18)';
+            el.style.color = 'rgba(122, 154, 170, 0.7)';
           }}
         >
           Sign in
@@ -98,26 +106,26 @@ export default function HomeNavbar({ onLoginClick }: Props) {
 
         {/* Avatar */}
         <div style={{
-          width: 28,
-          height: 28,
+          width: 26,
+          height: 26,
           borderRadius: '50%',
-          background: 'var(--color-surface-2)',
-          border: '1px solid rgba(46, 168, 223, 0.1)',
+          background: 'rgba(10, 26, 34, 0.9)',
+          border: '1px solid rgba(46, 168, 223, 0.09)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}>
           <svg
-            width="13"
-            height="13"
+            width="12"
+            height="12"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ color: 'var(--color-muted)' }}
+            style={{ color: 'rgba(74, 106, 122, 0.8)' }}
           >
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
@@ -133,17 +141,17 @@ function NavItem({ label }: { label: string }) {
     <a
       href="#"
       style={{
-        fontSize: 'var(--text-sm)',
-        fontWeight: 400,
-        color: 'var(--color-secondary)',
+        fontSize: '0.8125rem',
+        fontWeight: 300,
+        color: 'rgba(122, 154, 170, 0.65)',
         textDecoration: 'none',
-        letterSpacing: '-0.01em',
+        letterSpacing: '0.005em',
         transition: 'color 0.15s',
         padding: '4px 0',
         userSelect: 'none',
       }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--color-fg)'}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--color-secondary)'}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'rgba(240, 244, 246, 0.9)'}
+      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(122, 154, 170, 0.65)'}
     >
       {label}
     </a>

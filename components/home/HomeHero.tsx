@@ -34,28 +34,28 @@ export default function HomeHero() {
         overflow: 'hidden',
       }}
     >
-      {/* Subtle grid */}
+      {/* Grid – slightly quieter */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
           backgroundImage: [
-            'linear-gradient(rgba(46, 168, 223, 0.035) 1px, transparent 1px)',
-            'linear-gradient(90deg, rgba(46, 168, 223, 0.035) 1px, transparent 1px)',
+            'linear-gradient(rgba(46, 168, 223, 0.028) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(46, 168, 223, 0.028) 1px, transparent 1px)',
           ].join(', '),
-          backgroundSize: '64px 64px',
+          backgroundSize: '56px 56px',
           zIndex: 0,
         }}
       />
 
-      {/* Radial vignette – fades grid toward edges */}
+      {/* Radial vignette */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse 75% 65% at 50% 50%, transparent 15%, var(--color-bg) 100%)',
+          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 10%, var(--color-bg) 100%)',
           zIndex: 1,
         }}
       />
@@ -66,31 +66,31 @@ export default function HomeHero() {
           position: 'relative',
           zIndex: 2,
           width: '100%',
-          maxWidth: 680,
-          padding: '0 32px',
+          maxWidth: 760,
+          padding: '0 40px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          marginTop: '-40px', // optical center
+          marginTop: '-48px', // optical center
         }}
       >
-        {/* Eyebrow */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-          <div style={{ width: 24, height: 1, background: 'rgba(46, 168, 223, 0.35)' }} />
+        {/* Eyebrow – precise and quiet */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
+          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
           <span style={{
-            fontSize: 'var(--text-xs)',
+            fontSize: '0.625rem',
             fontWeight: 500,
-            letterSpacing: '0.13em',
+            letterSpacing: '0.22em',
             textTransform: 'uppercase',
             color: 'var(--color-accent)',
-            opacity: 0.75,
+            opacity: 0.45,
           }}>
             Property Network
           </span>
-          <div style={{ width: 24, height: 1, background: 'rgba(46, 168, 223, 0.35)' }} />
+          <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
         </div>
 
-        {/* Search bar */}
+        {/* Search bar – large, commanding */}
         <div style={{ width: '100%', position: 'relative' }}>
 
           {/* Search icon */}
@@ -98,17 +98,17 @@ export default function HomeHero() {
             aria-hidden
             style={{
               position: 'absolute',
-              left: 20,
+              left: 24,
               top: '50%',
               transform: 'translateY(-50%)',
-              color: focused ? 'var(--color-accent)' : 'var(--color-faint)',
-              transition: 'color 0.2s',
+              color: focused ? 'rgba(46, 168, 223, 0.55)' : 'rgba(46, 168, 223, 0.22)',
+              transition: 'color 0.25s',
               pointerEvents: 'none',
               display: 'flex',
               alignItems: 'center',
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -124,21 +124,21 @@ export default function HomeHero() {
             placeholder="Search by address, agent, status, or ID..."
             style={{
               width: '100%',
-              height: 58,
-              padding: '0 76px 0 48px',
+              height: 68,
+              padding: '0 92px 0 58px',
               background: 'var(--color-surface)',
-              border: `1px solid ${focused ? 'rgba(46, 168, 223, 0.28)' : 'rgba(46, 168, 223, 0.11)'}`,
-              borderRadius: 10,
+              border: `1px solid ${focused ? 'rgba(46, 168, 223, 0.28)' : 'rgba(46, 168, 223, 0.09)'}`,
+              borderRadius: 12,
               color: 'var(--color-fg)',
-              fontSize: '0.9375rem',
-              fontWeight: 400,
+              fontSize: '1rem',
+              fontWeight: 300,
               fontFamily: 'inherit',
               letterSpacing: '-0.01em',
               outline: 'none',
-              transition: 'border-color 0.2s, box-shadow 0.2s',
+              transition: 'border-color 0.25s, box-shadow 0.25s',
               boxShadow: focused
-                ? '0 0 0 3px rgba(46, 168, 223, 0.05), 0 8px 32px rgba(0,0,0,0.35)'
-                : '0 4px 20px rgba(0,0,0,0.25)',
+                ? '0 0 0 4px rgba(46, 168, 223, 0.055), 0 20px 60px rgba(0,0,0,0.5)'
+                : '0 8px 40px rgba(0,0,0,0.4)',
             }}
           />
 
@@ -148,7 +148,7 @@ export default function HomeHero() {
               aria-hidden
               style={{
                 position: 'absolute',
-                right: 14,
+                right: 18,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 display: 'flex',
@@ -163,14 +163,15 @@ export default function HomeHero() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '2px 6px',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid rgba(46, 168, 223, 0.09)',
+                    padding: '3px 7px',
+                    background: 'rgba(10, 26, 34, 0.7)',
+                    border: '1px solid rgba(46, 168, 223, 0.07)',
                     borderRadius: 4,
-                    color: 'var(--color-faint)',
-                    fontSize: '0.6875rem',
+                    color: 'rgba(46, 168, 223, 0.22)',
+                    fontSize: '0.625rem',
                     fontFamily: 'inherit',
                     lineHeight: 1.5,
+                    letterSpacing: '0.05em',
                   }}
                 >
                   {k}
@@ -180,17 +181,31 @@ export default function HomeHero() {
           )}
         </div>
 
-        {/* Quick actions */}
+        {/* Quick actions – commands, not buttons */}
         <div style={{
-          marginTop: 16,
+          marginTop: 24,
           display: 'flex',
-          gap: 6,
+          alignItems: 'center',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          alignItems: 'center',
         }}>
-          {QUICK_ACTIONS.map(label => (
-            <QuickAction key={label} label={label} />
+          {QUICK_ACTIONS.map((label, i) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center' }}>
+              <QuickAction label={label} />
+              {i < QUICK_ACTIONS.length - 1 && (
+                <span
+                  aria-hidden
+                  style={{
+                    color: 'rgba(46, 168, 223, 0.1)',
+                    fontSize: '0.75rem',
+                    padding: '0 4px',
+                    userSelect: 'none',
+                  }}
+                >
+                  ·
+                </span>
+              )}
+            </span>
           ))}
         </div>
       </div>
@@ -205,17 +220,16 @@ function QuickAction({ label }: { label: string }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '5px 14px',
-        background: hovered ? 'rgba(46, 168, 223, 0.05)' : 'transparent',
-        border: `1px solid ${hovered ? 'rgba(46, 168, 223, 0.22)' : 'rgba(46, 168, 223, 0.09)'}`,
-        borderRadius: 5,
-        color: hovered ? 'var(--color-fg)' : 'var(--color-muted)',
-        fontSize: '0.8125rem',
+        padding: '5px 10px',
+        background: 'transparent',
+        border: 'none',
+        color: hovered ? 'rgba(240, 244, 246, 0.6)' : 'rgba(122, 154, 170, 0.38)',
+        fontSize: '0.75rem',
         fontWeight: 400,
         cursor: 'pointer',
         fontFamily: 'inherit',
-        letterSpacing: '-0.01em',
-        transition: 'all 0.15s',
+        letterSpacing: '0.015em',
+        transition: 'color 0.2s',
         whiteSpace: 'nowrap',
       }}
     >
