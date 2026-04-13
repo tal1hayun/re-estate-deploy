@@ -118,6 +118,22 @@ export interface Message {
   created_at: string;
 }
 
+// Offer (Purchase offer on a property)
+export interface Offer {
+  id: string;
+  property_id: string;
+  agent_id: string;
+  amount: number;
+  offer_date: string;
+  buyer_description: string;
+  status: 'negotiating' | 'rejected';
+  notes: string | null;
+  is_private: boolean;
+  created_at: string;
+  updated_at: string;
+  agents?: { full_name: string };
+}
+
 // API Response
 export interface ApiResponse<T> {
   success: boolean;

@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import { supabase } from '@/lib/supabase';
-import type { Property, PropertyDetails, PropertyImage, PriceHistory, Agent, SharedLink, Message } from '@/types';
+import type { Property, PropertyDetails, PropertyImage, PriceHistory, Agent, SharedLink, Message, Offer } from '@/types';
 
 type FullProperty = Property & {
   agents: Agent;
@@ -30,7 +30,7 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const [property, setProperty] = useState<FullProperty | null>(null);
   const [priceHistory, setPriceHistory] = useState<(PriceHistory & { agents: { full_name: string } })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages'>(
+  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages' | 'offers'>(
     searchParams.get('tab') === 'messages' ? 'messages' : 'overview'
   );
 
@@ -66,6 +66,20 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
 
   // Image upload
   const [uploading, setUploading] = useState(false);
+
+  // Offers state
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerDate, setOfferDate] = useState('');
+  const [offerBuyer, setOfferBuyer] = useState('');
+  const [offerStatus, setOfferStatus] = useState<'negotiating' | 'rejected'>('negotiating');
+  const [offerNotes, setOfferNotes] = useState('');
+  const [offerPrivate, setOfferPrivate] = useState(false);
+  const [savingOffer, setSavingOffer] = useState(false);
+  const [deletingOffer, setDeletingOffer] = useState<string | null>(null);
 
   // Facebook post generator
   const [fbModalOpen, setFbModalOpen] = useState(false);
@@ -149,6 +163,7 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     fetchPriceHistory();
     fetchSharedLinks();
     fetchMessages();
+    fetchOffers();
 
     const channel = supabase
       .channel(`messages:${propertyId}`)
@@ -303,6 +318,72 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     setTimeout(() => setFbCopied(false), 2000);
   }
 
+  async function fetchOffers() {
+    setOffersLoading(true);
+    const res = await fetch(`/api/properties/${propertyId}/offers`);
+    const json = await res.json();
+    setOffers(json.data || []);
+    setOffersLoading(false);
+  }
+
+  function openAddOffer() {
+    setEditingOffer(null);
+    setOfferAmount('');
+    setOfferDate(new Date().toISOString().split('T')[0]);
+    setOfferBuyer('');
+    setOfferStatus('negotiating');
+    setOfferNotes('');
+    setOfferPrivate(false);
+    setOfferModalOpen(true);
+  }
+
+  function openEditOffer(offer: Offer) {
+    setEditingOffer(offer);
+    setOfferAmount(String(offer.amount));
+    setOfferDate(offer.offer_date);
+    setOfferBuyer(offer.buyer_description);
+    setOfferStatus(offer.status);
+    setOfferNotes(offer.notes || '');
+    setOfferPrivate(offer.is_private);
+    setOfferModalOpen(true);
+  }
+
+  async function handleSaveOffer() {
+    if (!offerAmount || !offerBuyer.trim()) return;
+    setSavingOffer(true);
+    const body = {
+      amount: Number(offerAmount),
+      offer_date: offerDate,
+      buyer_description: offerBuyer.trim(),
+      status: offerStatus,
+      notes: offerNotes.trim() || null,
+      is_private: offerPrivate,
+    };
+    if (editingOffer) {
+      await fetch(`/api/properties/${propertyId}/offers/${editingOffer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } else {
+      await fetch(`/api/properties/${propertyId}/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+    setOfferModalOpen(false);
+    setSavingOffer(false);
+    fetchOffers();
+  }
+
+  async function handleDeleteOffer(offerId: string) {
+    setDeletingOffer(offerId);
+    await fetch(`/api/properties/${propertyId}/offers/${offerId}`, { method: 'DELETE' });
+    setDeletingOffer(null);
+    fetchOffers();
+  }
+
   function imageUrl(path: string) {
     return `${SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
   }
@@ -418,6 +499,138 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               </button>
               <button
                 onClick={() => setDeletingProperty(false)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-lg text-sm transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Add/Edit Modal */}
+      {offerModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white font-semibold text-lg">
+                {editingOffer ? 'עריכת הצעה' : 'הצעה חדשה'}
+              </h2>
+              <button
+                onClick={() => setOfferModalOpen(false)}
+                className="text-gray-500 hover:text-white transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">סכום ההצעה (₪)</label>
+              <input
+                type="number"
+                value={offerAmount}
+                onChange={e => setOfferAmount(e.target.value)}
+                placeholder="לדוגמה: 2500000"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">תאריך</label>
+              <input
+                type="date"
+                value={offerDate}
+                onChange={e => setOfferDate(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Buyer description */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">תיאור המציע</label>
+              <input
+                type="text"
+                value={offerBuyer}
+                onChange={e => setOfferBuyer(e.target.value)}
+                placeholder='לדוגמה: "זוג צעיר מכפר יונה"'
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">סטטוס</label>
+              <div className="flex gap-2">
+                {([['negotiating', 'במשא ומתן'], ['rejected', 'נדחתה']] as const).map(([val, lbl]) => (
+                  <button
+                    key={val}
+                    onClick={() => setOfferStatus(val)}
+                    className={`flex-1 py-2 rounded-lg text-sm transition-colors border ${
+                      offerStatus === val
+                        ? val === 'negotiating'
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'bg-red-900/50 border-red-700 text-red-300'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">הערות פנימיות (אופציונלי)</label>
+              <textarea
+                value={offerNotes}
+                onChange={e => setOfferNotes(e.target.value)}
+                rows={3}
+                placeholder="תנאים, הערות לסוכן..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 text-sm resize-none"
+              />
+            </div>
+
+            {/* Privacy */}
+            <div className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+              <div>
+                <p className="text-white text-sm font-medium">נראות</p>
+                <p className="text-gray-500 text-xs mt-0.5">
+                  {offerPrivate ? 'רק אתה רואה הצעה זו' : 'כל הסוכנים במשרד רואים'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOfferPrivate(false)}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                    !offerPrivate ? 'bg-green-700 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  }`}
+                >
+                  משותף
+                </button>
+                <button
+                  onClick={() => setOfferPrivate(true)}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                    offerPrivate ? 'bg-gray-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  }`}
+                >
+                  פרטי
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleSaveOffer}
+                disabled={savingOffer || !offerAmount || !offerBuyer.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {savingOffer ? '...' : editingOffer ? 'שמור שינויים' : 'הוסף הצעה'}
+              </button>
+              <button
+                onClick={() => setOfferModalOpen(false)}
                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-lg text-sm transition-colors"
               >
                 ביטול
@@ -585,7 +798,7 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 mb-6 w-fit">
-        {([['overview', 'פרטים'], ['images', 'תמונות'], ['price', 'היסטוריית מחיר'], ['share', 'שיתוף'], ['messages', 'הודעות']] as const).map(([key, label]) => (
+        {([['overview', 'פרטים'], ['images', 'תמונות'], ['price', 'היסטוריית מחיר'], ['offers', 'הצעות'], ['share', 'שיתוף'], ['messages', 'הודעות']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -816,6 +1029,134 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Offers Tab */}
+      {tab === 'offers' && (
+        <div className="space-y-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-white font-semibold text-lg">הצעות על הנכס</h2>
+            <button
+              onClick={openAddOffer}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              + הוסף הצעה
+            </button>
+          </div>
+
+          {/* Summary bar */}
+          {offers.length > 0 && (() => {
+            const highest = Math.max(...offers.map(o => Number(o.amount)));
+            const latest = offers[0];
+            const statusLabel = latest.status === 'negotiating' ? 'במשא ומתן' : 'נדחתה';
+            return (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{offers.length}</div>
+                  <div className="text-gray-500 text-xs mt-1">הצעות</div>
+                </div>
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                  <div className="text-lg font-bold text-blue-400">{'₪' + highest.toLocaleString('he-IL')}</div>
+                  <div className="text-gray-500 text-xs mt-1">הצעה גבוהה ביותר</div>
+                </div>
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                  <div className={`text-sm font-semibold mt-1 ${latest.status === 'negotiating' ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {statusLabel}
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">סטטוס אחרון</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Offers list or empty state */}
+          {offersLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : offers.length === 0 ? (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
+              <div className="text-4xl mb-3">🤝</div>
+              <div className="text-white font-medium mb-1">אין הצעות עדיין</div>
+              <div className="text-gray-500 text-sm mb-5">הוסף את ההצעה הראשונה על הנכס</div>
+              <button
+                onClick={openAddOffer}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm transition-colors"
+              >
+                + הוסף הצעה ראשונה
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {offers.map(offer => {
+                const isOwner = offer.agent_id === agent?.id;
+                const statusColor = offer.status === 'negotiating'
+                  ? 'bg-yellow-900/40 text-yellow-400'
+                  : 'bg-red-900/40 text-red-400';
+                const statusLabel = offer.status === 'negotiating' ? 'במשא ומתן' : 'נדחתה';
+                return (
+                  <div
+                    key={offer.id}
+                    className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      {/* Left: amount + buyer */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xl font-bold text-blue-400">
+                            {'₪' + Number(offer.amount).toLocaleString('he-IL')}
+                          </span>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${statusColor}`}>
+                            {statusLabel}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            offer.is_private
+                              ? 'bg-gray-700 text-gray-400'
+                              : 'bg-green-900/30 text-green-500'
+                          }`}>
+                            {offer.is_private ? 'פרטי' : 'משותף'}
+                          </span>
+                        </div>
+                        <div className="text-white text-sm font-medium mb-0.5">{offer.buyer_description}</div>
+                        <div className="text-gray-500 text-xs">
+                          {new Date(offer.offer_date).toLocaleDateString('he-IL')}
+                          {offer.agents?.full_name && !isOwner && (
+                            <span className="mr-2 text-purple-400">· {offer.agents.full_name}</span>
+                          )}
+                        </div>
+                        {offer.notes && (
+                          <div className="mt-2 text-gray-400 text-xs bg-gray-800 rounded-lg px-3 py-2">
+                            {offer.notes}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: actions (own offers only) */}
+                      {isOwner && (
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => openEditOffer(offer)}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-xs transition-colors"
+                          >
+                            עריכה
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOffer(offer.id)}
+                            disabled={deletingOffer === offer.id}
+                            className="text-red-500 hover:text-red-400 text-xs transition-colors disabled:opacity-50"
+                          >
+                            {deletingOffer === offer.id ? '...' : 'מחק'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
