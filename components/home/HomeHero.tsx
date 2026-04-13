@@ -77,16 +77,17 @@ export default function HomeHero() {
         {/* Eyebrow – precise and quiet */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
-          <span style={{
+          <h1 style={{
             fontSize: '0.625rem',
             fontWeight: 500,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
             color: 'var(--color-accent)',
             opacity: 0.45,
+            margin: 0,
           }}>
             Property Network
-          </span>
+          </h1>
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.18)' }} />
         </div>
 
