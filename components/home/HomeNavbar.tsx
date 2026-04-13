@@ -1,12 +1,33 @@
 'use client';
 
-const NAV_ITEMS = ['Properties', 'Agents', 'Offers', 'Analytics'];
+import Link from 'next/link';
+
+const PUBLIC_NAV = [
+  { label: 'Properties', href: '#' },
+  { label: 'Agents',     href: '#' },
+  { label: 'Offers',     href: '#' },
+  { label: 'Analytics',  href: '#' },
+];
+
+const AUTH_NAV = [
+  { label: 'Properties', href: '/properties' },
+  { label: 'Agents',     href: '/organization' },
+  { label: 'Offers',     href: '#' },
+  { label: 'Analytics',  href: '#' },
+];
 
 interface Props {
   onLoginClick?: () => void;
+  /** Authenticated mode: pass agent initial to show in avatar */
+  agentInitial?: string;
+  /** Authenticated mode: sign-out callback */
+  onSignOut?: () => void;
 }
 
-export default function HomeNavbar({ onLoginClick }: Props) {
+export default function HomeNavbar({ onLoginClick, agentInitial, onSignOut }: Props) {
+  const isAuth = Boolean(agentInitial);
+  const navItems = isAuth ? AUTH_NAV : PUBLIC_NAV;
+
   return (
     <nav
       dir="ltr"
@@ -28,7 +49,6 @@ export default function HomeNavbar({ onLoginClick }: Props) {
     >
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-        {/* Wordmark – light/heavy contrast */}
         <div style={{ display: 'flex', alignItems: 'baseline', userSelect: 'none' }}>
           <span style={{
             fontSize: '0.8125rem',
@@ -91,8 +111,8 @@ export default function HomeNavbar({ onLoginClick }: Props) {
         alignItems: 'center',
         gap: 48,
       }}>
-        {NAV_ITEMS.map(item => (
-          <NavItem key={item} label={item} />
+        {navItems.map(item => (
+          <NavItem key={item.label} label={item.label} href={item.href} />
         ))}
       </div>
 
@@ -107,80 +127,144 @@ export default function HomeNavbar({ onLoginClick }: Props) {
           flexShrink: 0,
         }} />
 
-        <button
-          onClick={onLoginClick}
-          style={{
-            padding: '5px 16px',
-            background: 'transparent',
-            border: '1px solid rgba(46, 168, 223, 0.15)',
-            borderRadius: 5,
-            color: 'rgba(122, 154, 170, 0.62)',
-            fontSize: '0.75rem',
-            fontWeight: 400,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            letterSpacing: '0.05em',
-            transition: 'border-color 0.18s, color 0.18s, background 0.18s, box-shadow 0.18s',
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget;
-            el.style.borderColor = 'rgba(46, 168, 223, 0.38)';
-            el.style.color = 'rgba(240, 244, 246, 0.85)';
-            el.style.background = 'rgba(46, 168, 223, 0.04)';
-            el.style.boxShadow = '0 0 12px rgba(46, 168, 223, 0.08)';
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget;
-            el.style.borderColor = 'rgba(46, 168, 223, 0.15)';
-            el.style.color = 'rgba(122, 154, 170, 0.62)';
-            el.style.background = 'transparent';
-            el.style.boxShadow = 'none';
-          }}
-        >
-          Sign in
-        </button>
+        {isAuth ? (
+          /* Authenticated: sign-out link */
+          <button
+            onClick={onSignOut}
+            style={{
+              padding: '5px 16px',
+              background: 'transparent',
+              border: '1px solid rgba(46, 168, 223, 0.1)',
+              borderRadius: 5,
+              color: 'rgba(122, 154, 170, 0.45)',
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              letterSpacing: '0.05em',
+              transition: 'border-color 0.18s, color 0.18s',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget;
+              el.style.borderColor = 'rgba(240, 104, 120, 0.25)';
+              el.style.color = 'rgba(240, 104, 120, 0.65)';
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget;
+              el.style.borderColor = 'rgba(46, 168, 223, 0.1)';
+              el.style.color = 'rgba(122, 154, 170, 0.45)';
+            }}
+          >
+            Sign out
+          </button>
+        ) : (
+          /* Public: sign-in */
+          <button
+            onClick={onLoginClick}
+            style={{
+              padding: '5px 16px',
+              background: 'transparent',
+              border: '1px solid rgba(46, 168, 223, 0.15)',
+              borderRadius: 5,
+              color: 'rgba(122, 154, 170, 0.62)',
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              letterSpacing: '0.05em',
+              transition: 'border-color 0.18s, color 0.18s, background 0.18s, box-shadow 0.18s',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget;
+              el.style.borderColor = 'rgba(46, 168, 223, 0.38)';
+              el.style.color = 'rgba(240, 244, 246, 0.85)';
+              el.style.background = 'rgba(46, 168, 223, 0.04)';
+              el.style.boxShadow = '0 0 12px rgba(46, 168, 223, 0.08)';
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget;
+              el.style.borderColor = 'rgba(46, 168, 223, 0.15)';
+              el.style.color = 'rgba(122, 154, 170, 0.62)';
+              el.style.background = 'transparent';
+              el.style.boxShadow = 'none';
+            }}
+          >
+            Sign in
+          </button>
+        )}
 
         {/* Avatar */}
-        <div style={{
-          width: 26,
-          height: 26,
-          borderRadius: '50%',
-          background: 'rgba(10, 26, 34, 0.9)',
-          border: '1px solid rgba(46, 168, 223, 0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          cursor: 'pointer',
-          transition: 'border-color 0.18s',
-        }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(46, 168, 223, 0.22)'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(46, 168, 223, 0.08)'}
+        <div
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: '50%',
+            background: isAuth ? 'rgba(46, 168, 223, 0.08)' : 'rgba(10, 26, 34, 0.9)',
+            border: `1px solid ${isAuth ? 'rgba(46, 168, 223, 0.18)' : 'rgba(46, 168, 223, 0.08)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            cursor: 'pointer',
+            transition: 'border-color 0.18s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(46, 168, 223, 0.36)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = isAuth ? 'rgba(46, 168, 223, 0.18)' : 'rgba(46, 168, 223, 0.08)'}
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ color: 'rgba(74, 106, 122, 0.75)' }}
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
+          {isAuth ? (
+            <span style={{
+              fontSize: '0.625rem',
+              fontWeight: 500,
+              color: 'rgba(46, 168, 223, 0.75)',
+              letterSpacing: 0,
+              lineHeight: 1,
+            }}>
+              {agentInitial}
+            </span>
+          ) : (
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: 'rgba(74, 106, 122, 0.75)' }}
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          )}
         </div>
       </div>
     </nav>
   );
 }
 
-function NavItem({ label }: { label: string }) {
+function NavItem({ label, href }: { label: string; href: string }) {
+  if (href === '#') {
+    return (
+      <a
+        href="#"
+        className="nav-link"
+        style={{
+          fontSize: '0.8125rem',
+          fontWeight: 300,
+          textDecoration: 'none',
+          letterSpacing: '0.005em',
+          padding: '4px 0',
+          userSelect: 'none',
+        }}
+      >
+        {label}
+      </a>
+    );
+  }
   return (
-    <a
-      href="#"
+    <Link
+      href={href}
       className="nav-link"
       style={{
         fontSize: '0.8125rem',
@@ -192,6 +276,6 @@ function NavItem({ label }: { label: string }) {
       }}
     >
       {label}
-    </a>
+    </Link>
   );
 }
