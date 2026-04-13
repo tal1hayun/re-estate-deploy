@@ -2,7 +2,7 @@
 
 // ─── Feature Flags ────────────────────────────────────────────────────────────
 // To re-enable the Facebook post generator: set FB_POST_ENABLED = true
-const FB_POST_ENABLED = false;
+const FB_POST_ENABLED = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState, use } from 'react';
