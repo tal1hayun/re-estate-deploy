@@ -5,9 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'בוקר טוב';
+  if (h < 17) return 'צהריים טובים';
+  return 'ערב טוב';
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -25,13 +25,6 @@ function IconUsers() {
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
-  );
-}
-function IconMessage() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   );
 }
@@ -65,48 +58,31 @@ function IconArrow() {
 const TILES = [
   {
     id: 'properties',
-    label: 'Properties',
-    desc: 'Active listings and pipeline status',
+    label: 'נכסים',
+    desc: 'ניהול נכסים פעילים וסטטוס עסקאות',
     href: '/properties',
     icon: <IconGrid />,
-    available: true,
-    span: 2,
   },
   {
     id: 'agents',
-    label: 'Agents',
-    desc: 'Team members and access',
+    label: 'סוכנים',
+    desc: 'חברי צוות והרשאות גישה',
     href: '/organization',
     icon: <IconUsers />,
-    available: true,
-    span: 2,
-  },
-  {
-    id: 'messages',
-    label: 'Messages',
-    desc: 'Client and team communications',
-    href: '/messages',
-    icon: <IconMessage />,
-    available: true,
-    span: 2,
   },
   {
     id: 'offers',
-    label: 'Offers',
-    desc: 'Deal pipeline and negotiations',
-    href: '#',
+    label: 'הצעות',
+    desc: 'הצעות מחיר ומשא ומתן על עסקאות',
+    href: '/offers',
     icon: <IconDeal />,
-    available: false,
-    span: 3,
   },
   {
     id: 'analytics',
-    label: 'Analytics',
-    desc: 'Performance and conversion insights',
-    href: '#',
+    label: 'אנליטיקה',
+    desc: 'נתוני ביצועים ותובנות המרה',
+    href: '/analytics',
     icon: <IconChart />,
-    available: false,
-    span: 3,
   },
 ];
 
@@ -167,12 +143,11 @@ function FloorPlanSVG() {
 }
 
 // ── Tile component ─────────────────────────────────────────────────────────────
-function Tile({ label, desc, href, icon, available, span }: {
-  label: string; desc: string; href: string;
-  icon: React.ReactNode; available: boolean; span: number;
+function Tile({ label, desc, href, icon }: {
+  label: string; desc: string; href: string; icon: React.ReactNode;
 }) {
-  const content = (
-    <>
+  return (
+    <Link href={href} className="home-tile">
       <div className="home-tile-icon">{icon}</div>
       <h3 style={{
         fontSize: '0.9375rem', fontWeight: 500,
@@ -188,41 +163,12 @@ function Tile({ label, desc, href, icon, available, span }: {
       }}>
         {desc}
       </p>
-      <div style={{ marginTop: 'auto', paddingTop: 20, display: 'flex', alignItems: 'center', justifyContent: available ? 'flex-end' : 'flex-start' }}>
-        {available ? (
-          <span style={{ color: 'rgba(46, 168, 223, 0.25)', transition: 'color 0.22s ease' }}>
-            <IconArrow />
-          </span>
-        ) : (
-          <span style={{
-            fontSize: '0.5625rem', fontWeight: 500, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: 'rgba(46, 168, 223, 0.3)',
-            border: '1px solid rgba(46, 168, 223, 0.15)',
-            borderRadius: 3, padding: '2px 6px',
-          }}>
-            Soon
-          </span>
-        )}
+      <div style={{ marginTop: 'auto', paddingTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+        <span style={{ color: 'rgba(46, 168, 223, 0.25)', transition: 'color 0.22s ease' }}>
+          <IconArrow />
+        </span>
       </div>
-    </>
-  );
-
-  if (!available) {
-    return (
-      <div style={{ gridColumn: `span ${span}` }}>
-        <div className="home-tile" style={{ opacity: 0.38, cursor: 'default', pointerEvents: 'none' }}>
-          {content}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ gridColumn: `span ${span}` }}>
-      <Link href={href} className="home-tile">
-        {content}
-      </Link>
-    </div>
+    </Link>
   );
 }
 
@@ -304,9 +250,8 @@ export default function InternalHomePage() {
           )}
         </div>
 
-        {/* ── Section tiles ── */}
-        {/* 6-column grid: available tiles span 2 cols each (3 per row), coming-soon span 3 cols each (2 per row) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
+        {/* ── Section tiles — 2×2 grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
           {TILES.map(tile => (
             <Tile key={tile.id} {...tile} />
           ))}

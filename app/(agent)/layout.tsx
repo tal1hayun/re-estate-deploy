@@ -6,12 +6,11 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_ITEMS = [
-  { href: '/home',         label: 'Home',       available: true  },
-  { href: '/properties',   label: 'Properties', available: true  },
-  { href: '/organization', label: 'Agents',     available: true  },
-  { href: '/messages',     label: 'Messages',   available: true  },
-  { href: '#',             label: 'Offers',     available: false },
-  { href: '#',             label: 'Analytics',  available: false },
+  { href: '/home',         label: 'בית'      },
+  { href: '/properties',   label: 'נכסים'    },
+  { href: '/organization', label: 'סוכנים'   },
+  { href: '/offers',       label: 'הצעות'    },
+  { href: '/analytics',    label: 'אנליטיקה' },
 ];
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
@@ -81,35 +80,9 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         {/* Nav items — centered */}
         <nav style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 40 }}>
           {NAV_ITEMS.map(item => {
-            if (!item.available) {
-              return (
-                <span
-                  key={item.label}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    fontSize: '0.8125rem', fontWeight: 300,
-                    color: 'rgba(122, 154, 170, 0.2)',
-                    letterSpacing: '0.005em',
-                    userSelect: 'none', cursor: 'default',
-                  }}
-                >
-                  {item.label}
-                  <span style={{
-                    fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.06em',
-                    textTransform: 'uppercase', color: 'rgba(46, 168, 223, 0.25)',
-                    border: '1px solid rgba(46, 168, 223, 0.12)',
-                    borderRadius: 3, padding: '1px 4px', lineHeight: 1.4,
-                  }}>
-                    soon
-                  </span>
-                </span>
-              );
-            }
-
             const isActive =
               pathname === item.href ||
               (item.href !== '/home' && pathname.startsWith(item.href + '/'));
-
             return (
               <Link
                 key={item.label}
@@ -157,7 +130,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
               e.currentTarget.style.color = 'rgba(122, 154, 170, 0.45)';
             }}
           >
-            Sign out
+            יציאה
           </button>
 
           {/* Agent avatar */}
