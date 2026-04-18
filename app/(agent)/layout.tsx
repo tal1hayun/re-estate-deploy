@@ -6,11 +6,9 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_ITEMS = [
-  { href: '/home',         label: 'בית'      },
-  { href: '/properties',   label: 'נכסים'    },
-  { href: '/organization', label: 'סוכנים'   },
-  { href: '/offers',       label: 'הצעות'    },
-  { href: '/analytics',    label: 'אנליטיקה' },
+  { href: '/home',         label: 'בית'    },
+  { href: '/properties',   label: 'נכסים'  },
+  { href: '/organization', label: 'סוכנים' },
 ];
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {

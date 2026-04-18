@@ -28,23 +28,6 @@ function IconUsers() {
     </svg>
   );
 }
-function IconDeal() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 11 12 14 22 4"/>
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-    </svg>
-  );
-}
-function IconChart() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/>
-      <line x1="12" y1="20" x2="12" y2="4"/>
-      <line x1="6" y1="20" x2="6" y2="14"/>
-    </svg>
-  );
-}
 function IconArrow() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -69,20 +52,6 @@ const TILES = [
     desc: 'חברי צוות והרשאות גישה',
     href: '/organization',
     icon: <IconUsers />,
-  },
-  {
-    id: 'offers',
-    label: 'הצעות',
-    desc: 'הצעות מחיר ומשא ומתן על עסקאות',
-    href: '/offers',
-    icon: <IconDeal />,
-  },
-  {
-    id: 'analytics',
-    label: 'אנליטיקה',
-    desc: 'נתוני ביצועים ותובנות המרה',
-    href: '/analytics',
-    icon: <IconChart />,
   },
 ];
 
@@ -250,7 +219,7 @@ export default function InternalHomePage() {
           )}
         </div>
 
-        {/* ── Section tiles — 2×2 grid ── */}
+        {/* ── Section tiles ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
           {TILES.map(tile => (
             <Tile key={tile.id} {...tile} />
