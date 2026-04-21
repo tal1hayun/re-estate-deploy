@@ -47,6 +47,179 @@ function IconX() {
   );
 }
 
+function getPriceStep(max: number) {
+  if (max <= 1_000_000) return 10_000;
+  if (max <= 10_000_000) return 50_000;
+  return 100_000;
+}
+
+function PriceRangeSlider({
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  value: [number, number] | null;
+  onChange: (v: [number, number] | null) => void;
+}) {
+  const step = getPriceStep(max);
+  const current: [number, number] = value ?? [min, max];
+  const [lo, hi] = current;
+  const isActive = value !== null;
+
+  const range = Math.max(1, max - min);
+  const leftPct = ((lo - min) / range) * 100;
+  const rightPct = ((hi - min) / range) * 100;
+
+  function handleLo(e: React.ChangeEvent<HTMLInputElement>) {
+    const next = Math.min(Number(e.target.value), hi);
+    onChange([next, hi]);
+  }
+  function handleHi(e: React.ChangeEvent<HTMLInputElement>) {
+    const next = Math.max(Number(e.target.value), lo);
+    onChange([lo, next]);
+  }
+
+  return (
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: `1px solid ${isActive ? 'rgba(46,168,223,0.5)' : 'var(--color-border)'}`,
+        borderRadius: 10,
+        padding: '12px 16px 14px',
+        direction: 'rtl',
+      }}
+    >
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 10, gap: 12, flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontSize: 'var(--text-xs)',
+          color: 'var(--color-muted)',
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+        }}>
+          טווח מחירים
+        </span>
+        <span style={{
+          fontSize: 'var(--text-sm)',
+          color: 'var(--color-fg)',
+          fontVariantNumeric: 'tabular-nums',
+          fontWeight: 500,
+        }}>
+          {formatPrice(lo)} — {formatPrice(hi)}
+        </span>
+        {isActive && (
+          <button
+            onClick={() => onChange(null)}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: 6,
+              padding: '3px 10px',
+              color: 'var(--color-muted)',
+              fontSize: 'var(--text-xs)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            איפוס
+          </button>
+        )}
+      </div>
+
+      <div style={{ position: 'relative', height: 32, direction: 'ltr' }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: 0, right: 0,
+          height: 4, transform: 'translateY(-50%)',
+          background: 'var(--color-surface-2, rgba(255,255,255,0.08))',
+          borderRadius: 2,
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%',
+          left: `${leftPct}%`, right: `${100 - rightPct}%`,
+          height: 4, transform: 'translateY(-50%)',
+          background: 'var(--color-accent)',
+          borderRadius: 2,
+        }} />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={lo}
+          onChange={handleLo}
+          className="price-range-input"
+          style={{ zIndex: lo > max - (max - min) * 0.05 ? 5 : 3 }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={hi}
+          onChange={handleHi}
+          className="price-range-input"
+          style={{ zIndex: 4 }}
+        />
+      </div>
+
+      <style jsx>{`
+        .price-range-input {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 32px;
+          appearance: none;
+          -webkit-appearance: none;
+          background: transparent;
+          pointer-events: none;
+          margin: 0;
+          outline: none;
+        }
+        .price-range-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--color-accent);
+          border: 2px solid var(--color-bg, #060f14);
+          cursor: pointer;
+          pointer-events: auto;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+          transition: transform 0.1s;
+        }
+        .price-range-input::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+        .price-range-input::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--color-accent);
+          border: 2px solid var(--color-bg, #060f14);
+          cursor: pointer;
+          pointer-events: auto;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        }
+        .price-range-input::-webkit-slider-runnable-track {
+          background: transparent;
+          border: none;
+        }
+        .price-range-input::-moz-range-track {
+          background: transparent;
+          border: none;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 type SortKey = 'date-new' | 'date-old' | 'price-asc' | 'price-desc' | 'name';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -393,6 +566,7 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('date-new');
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     fetch(`/api/org/${orgId}/properties`)
@@ -411,10 +585,22 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'he'));
   }, [properties]);
 
+  // Max price across all properties (dynamic ceiling for the slider)
+  const maxPrice = useMemo(() => {
+    if (properties.length === 0) return 0;
+    const max = Math.max(...properties.map(p => p.current_price || 0));
+    const step = getPriceStep(max);
+    return Math.ceil(max / step) * step;
+  }, [properties]);
+
   // Filtered + sorted properties
   const filtered = useMemo(() => {
     let result = properties.filter(p => {
       if (cityFilter && p.city?.trim() !== cityFilter) return false;
+      if (priceRange) {
+        const [minP, maxP] = priceRange;
+        if (p.current_price < minP || p.current_price > maxP) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const inTitle = p.title?.toLowerCase().includes(q);
@@ -437,14 +623,15 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
     });
 
     return result;
-  }, [properties, cityFilter, searchQuery, sortBy]);
+  }, [properties, cityFilter, searchQuery, sortBy, priceRange]);
 
-  const hasActiveFilters = searchQuery.trim() || cityFilter || sortBy !== 'date-new';
+  const hasActiveFilters = searchQuery.trim() || cityFilter || sortBy !== 'date-new' || priceRange !== null;
 
   function clearFilters() {
     setSearchQuery('');
     setCityFilter('');
     setSortBy('date-new');
+    setPriceRange(null);
   }
 
   if (loading) {
@@ -644,6 +831,18 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
             </button>
           )}
         </div>
+
+        {/* Price Range Slider */}
+        {maxPrice > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <PriceRangeSlider
+              min={0}
+              max={maxPrice}
+              value={priceRange}
+              onChange={setPriceRange}
+            />
+          </div>
+        )}
 
         {/* Grid */}
         {filtered.length === 0 ? (
