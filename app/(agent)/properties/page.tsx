@@ -586,30 +586,32 @@ export default function PropertiesPage() {
                 style={{
                   background: 'var(--color-surface)',
                   border: '1px solid var(--color-border)',
-                  borderRadius: 12,
+                  borderRadius: 14,
                   overflow: 'hidden',
                   textDecoration: 'none',
                   display: 'block',
-                  transition: 'border-color 0.2s, transform 0.2s',
+                  transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(46,168,223,0.3)';
-                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
+                  const el = e.currentTarget as HTMLAnchorElement;
+                  el.style.borderColor = 'rgba(46,168,223,0.4)';
+                  el.style.transform = 'scale(1.02)';
+                  el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.35)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--color-border)';
-                  (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+                  const el = e.currentTarget as HTMLAnchorElement;
+                  el.style.borderColor = 'var(--color-border)';
+                  el.style.transform = 'scale(1)';
+                  el.style.boxShadow = 'none';
                 }}
               >
-                {/* Image */}
-                <div style={{ height: 192, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+                {/* Image + gradient overlay */}
+                <div style={{ height: 220, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
                   {coverUrl ? (
                     <img
                       src={coverUrl}
                       alt={property.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
-                      onMouseEnter={e => (e.target as HTMLImageElement).style.transform = 'scale(1.04)'}
-                      onMouseLeave={e => (e.target as HTMLImageElement).style.transform = 'scale(1)'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease' }}
                     />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -617,8 +619,43 @@ export default function PropertiesPage() {
                     </div>
                   )}
 
-                  {/* Status badge */}
-                  <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+                  {/* Gradient overlay */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(to bottom, transparent 35%, rgba(6,15,20,0.88) 100%)',
+                    pointerEvents: 'none',
+                  }} />
+
+                  {/* Price + location on overlay */}
+                  <div style={{
+                    position: 'absolute', bottom: 0, right: 0, left: 0,
+                    padding: '10px 16px 14px',
+                    direction: 'rtl',
+                  }}>
+                    <div style={{
+                      fontSize: 'var(--text-xl)',
+                      fontWeight: 700,
+                      color: '#fff',
+                      letterSpacing: '-0.02em',
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1.2,
+                    }}>
+                      {formatPrice(property.current_price)}
+                    </div>
+                    <div style={{
+                      fontSize: 'var(--text-xs)',
+                      color: 'rgba(255,255,255,0.72)',
+                      marginTop: 2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {property.city} · {property.address}
+                    </div>
+                  </div>
+
+                  {/* Status + agent badges */}
+                  <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }}>
                     <span
                       className={
                         property.status === 'active' ? 'status-active' :
@@ -652,41 +689,31 @@ export default function PropertiesPage() {
                   </div>
                 </div>
 
-                {/* Info */}
-                <div style={{ padding: '16px 18px 18px' }}>
+                {/* Info — title + specs */}
+                <div style={{ padding: '14px 16px 16px' }}>
                   <h3 style={{
                     fontSize: 'var(--text-base)',
                     fontWeight: 600,
                     color: 'var(--color-fg)',
-                    marginBottom: 4,
+                    marginBottom: 8,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}>
                     {property.title}
                   </h3>
-                  <p style={{
-                    fontSize: 'var(--text-sm)',
-                    color: 'var(--color-muted)',
-                    marginBottom: 14,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {property.city} · {property.address}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      fontSize: 'var(--text-lg)',
-                      fontWeight: 700,
-                      color: 'var(--color-accent)',
-                      letterSpacing: '-0.01em',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}>
-                      {formatPrice(property.current_price)}
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    {property.property_details && (property.property_details.bedrooms || property.property_details.bathrooms || property.property_details.built_size_sqm) ? (
+                      <div style={{ display: 'flex', gap: 10, fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+                        {property.property_details.bedrooms && <span>{property.property_details.bedrooms} חד׳</span>}
+                        {property.property_details.bathrooms && <span>{property.property_details.bathrooms} אמב׳</span>}
+                        {property.property_details.built_size_sqm && <span>{property.property_details.built_size_sqm} מ&quot;ר</span>}
+                      </div>
+                    ) : (
+                      <span />
+                    )}
                     {(isOwn || isAdmin) && (
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 400 }}>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 400, flexShrink: 0 }}>
                         ניתן לעריכה
                       </span>
                     )}
