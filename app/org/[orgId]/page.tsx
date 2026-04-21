@@ -895,21 +895,25 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
                     cursor: 'pointer',
                     textAlign: 'right',
                     padding: 0,
-                    transition: 'border-color 0.2s, transform 0.15s',
+                    transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s',
                     display: 'flex', flexDirection: 'column',
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)';
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.borderColor = 'rgba(46,168,223,0.4)';
+                    el.style.transform = 'scale(1.02)';
+                    el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.35)';
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.borderColor = 'var(--color-border)';
+                    el.style.transform = 'scale(1)';
+                    el.style.boxShadow = 'none';
                   }}
                 >
-                  {/* Cover Image */}
+                  {/* Cover Image + gradient overlay */}
                   <div style={{
-                    width: '100%', aspectRatio: '16/10',
+                    width: '100%', aspectRatio: '16/9',
                     background: 'var(--color-surface-2)',
                     overflow: 'hidden', flexShrink: 0,
                     position: 'relative',
@@ -918,7 +922,7 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
                       <img
                         src={imageUrl(cover.storage_path)}
                         alt={p.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease' }}
                       />
                     ) : (
                       <div style={{
@@ -927,34 +931,61 @@ export default function OrgCatalogPage({ params }: { params: Promise<{ orgId: st
                         fontSize: 36, color: 'var(--color-faint)',
                       }}>🏠</div>
                     )}
+
+                    {/* Gradient overlay */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(to bottom, transparent 35%, rgba(6,15,20,0.88) 100%)',
+                      pointerEvents: 'none',
+                    }} />
+
+                    {/* Price + location on overlay */}
+                    <div style={{
+                      position: 'absolute', bottom: 0, right: 0, left: 0,
+                      padding: '10px 16px 14px',
+                      direction: 'rtl',
+                    }}>
+                      <div style={{
+                        fontSize: 'var(--text-xl)',
+                        fontWeight: 700,
+                        color: '#fff',
+                        letterSpacing: '-0.02em',
+                        fontVariantNumeric: 'tabular-nums',
+                        lineHeight: 1.2,
+                      }}>
+                        {formatPrice(p.current_price)}
+                      </div>
+                      <div style={{
+                        fontSize: 'var(--text-xs)',
+                        color: 'rgba(255,255,255,0.72)',
+                        marginTop: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {p.city} · {p.address}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Card Body */}
-                  <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.3 }}>
+                  {/* Card Body — title + specs */}
+                  <div style={{ padding: '14px 16px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{
+                      fontSize: 'var(--text-base)', fontWeight: 600,
+                      color: 'var(--color-fg)', lineHeight: 1.3,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
                       {p.title}
-                    </div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
-                      {p.city} · {p.address}
                     </div>
 
                     {/* Specs row */}
                     {d && (d.bedrooms || d.bathrooms || d.built_size_sqm) && (
-                      <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--color-secondary)' }}>
+                      <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
                         {d.bedrooms && <span>{d.bedrooms} חד׳</span>}
                         {d.bathrooms && <span>{d.bathrooms} אמב׳</span>}
                         {d.built_size_sqm && <span>{d.built_size_sqm} מ&quot;ר</span>}
                       </div>
                     )}
-
-                    <div style={{
-                      marginTop: 'auto', paddingTop: 8,
-                      borderTop: '1px solid var(--color-border-soft)',
-                      fontSize: 'var(--text-lg)', fontWeight: 700,
-                      color: 'var(--color-accent)',
-                    }}>
-                      {formatPrice(p.current_price)}
-                    </div>
                   </div>
                 </button>
               );
