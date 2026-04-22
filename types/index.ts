@@ -38,6 +38,8 @@ export interface Property {
   current_price: number;
   listing_date: string;
   status: 'active' | 'sold' | 'inactive';
+  internal_notes?: string;
+  tags?: string[];
   created_at: string;
   updated_at: string;
 }
