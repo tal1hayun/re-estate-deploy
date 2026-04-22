@@ -34,7 +34,7 @@ export async function GET(
   const { data: property } = await supabase
     .from('properties')
     .select(`
-      id, title, address, city, description, current_price, status,
+      id, title, address, city, description, current_price, status, latitude, longitude,
       property_details(*),
       property_images(id, storage_path, is_cover, display_order)
     `)

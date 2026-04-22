@@ -1,7 +1,19 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import dynamic from 'next/dynamic';
 import type { PropertyDetails, PropertyImage } from '@/types';
+import ImageLightbox from '@/components/ImageLightbox';
+import type { MapProperty } from '@/components/PropertyMap';
+
+const PropertyMap = dynamic(() => import('@/components/PropertyMap'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 240, borderRadius: 12, background: '#1a2d3a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b8a9a', fontSize: 14 }}>
+      טוען מפה…
+    </div>
+  ),
+});
 
 type ClientProperty = {
   id: string;
@@ -11,6 +23,8 @@ type ClientProperty = {
   description?: string;
   current_price: number;
   status: string;
+  latitude: number | null;
+  longitude: number | null;
   property_details: PropertyDetails | null;
   property_images: PropertyImage[];
 };
@@ -23,6 +37,7 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Messaging
   const [senderName, setSenderName] = useState('');
@@ -85,6 +100,19 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
   const images = [...(property.property_images || [])].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
   const d = property.property_details;
 
+  const lightboxImages = images.map(img => ({ id: img.id, url: imageUrl(img.storage_path) }));
+
+  const hasCoords = typeof property.latitude === 'number' && typeof property.longitude === 'number';
+  const mapProps: MapProperty[] = hasCoords ? [{
+    id: property.id,
+    title: property.title,
+    city: property.city,
+    address: property.address,
+    current_price: property.current_price,
+    latitude: property.latitude,
+    longitude: property.longitude,
+  }] : [];
+
   return (
     <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
       {/* Header */}
@@ -97,13 +125,40 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
         {/* Image Gallery */}
         {images.length > 0 ? (
           <div className="mb-6">
-            <div className="rounded-2xl overflow-hidden aspect-video bg-gray-800 mb-3">
+            {/* Main image — click to open lightbox */}
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="w-full rounded-2xl overflow-hidden aspect-video bg-gray-800 mb-3 block relative group"
+              style={{ padding: 0, border: 'none', cursor: 'zoom-in' }}
+              aria-label="פתח תמונה מוגדלת"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl(images[activeImage].storage_path)}
                 alt={property.title}
                 className="w-full h-full object-cover"
               />
-            </div>
+              {/* Zoom hint overlay */}
+              <div
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(1px)' }}
+              >
+                <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, background: 'rgba(0,0,0,0.5)', padding: '6px 14px', borderRadius: 20 }}>
+                  הגדל תמונה
+                </span>
+              </div>
+              {images.length > 1 && (
+                <span style={{
+                  position: 'absolute', bottom: 10, left: 10,
+                  background: 'rgba(0,0,0,0.6)',
+                  color: '#fff', fontSize: 12, fontWeight: 600,
+                  padding: '3px 10px', borderRadius: 14,
+                }}>
+                  {activeImage + 1} / {images.length}
+                </span>
+              )}
+            </button>
             {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {images.map((img, i) => (
@@ -114,6 +169,7 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
                       activeImage === i ? 'border-blue-500' : 'border-transparent'
                     }`}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imageUrl(img.storage_path)} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -122,6 +178,15 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
           </div>
         ) : (
           <div className="rounded-2xl bg-gray-900 aspect-video flex items-center justify-center text-6xl mb-6">🏠</div>
+        )}
+
+        {/* Lightbox */}
+        {lightboxOpen && (
+          <ImageLightbox
+            images={lightboxImages}
+            startIndex={activeImage}
+            onClose={() => setLightboxOpen(false)}
+          />
         )}
 
         {/* Title & Price */}
@@ -178,6 +243,17 @@ export default function ClientPropertyPage({ params }: { params: Promise<{ token
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-4">
             <h2 className="font-semibold text-white mb-3">תיאור</h2>
             <p className="text-gray-400 text-sm leading-relaxed">{property.description}</p>
+          </div>
+        )}
+
+        {/* Mini Map */}
+        {hasCoords && (
+          <div className="mb-4">
+            <h2 className="font-semibold text-white mb-3">מיקום הנכס</h2>
+            <PropertyMap
+              height={240}
+              properties={mapProps}
+            />
           </div>
         )}
 
