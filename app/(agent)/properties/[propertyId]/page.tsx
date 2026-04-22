@@ -5,12 +5,13 @@
 const FB_POST_ENABLED = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import { supabase } from '@/lib/supabase';
 import type { Property, PropertyDetails, PropertyImage, PriceHistory, Agent, SharedLink, Message, Offer } from '@/types';
+import TagInput from '@/components/TagInput';
 
 type FullProperty = Property & {
   agents: Agent;
@@ -30,7 +31,7 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const [property, setProperty] = useState<FullProperty | null>(null);
   const [priceHistory, setPriceHistory] = useState<(PriceHistory & { agents: { full_name: string } })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages' | 'offers'>(
+  const [tab, setTab] = useState<'overview' | 'images' | 'price' | 'share' | 'messages' | 'offers' | 'internal'>(
     searchParams.get('tab') === 'messages' ? 'messages' : 'overview'
   );
 
@@ -87,6 +88,12 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
   const [fbGenerating, setFbGenerating] = useState(false);
   const [fbError, setFbError] = useState<string | null>(null);
   const [fbCopied, setFbCopied] = useState(false);
+
+  // Internal notes + tags
+  const [internalNotes, setInternalNotes] = useState('');
+  const [propertyTags, setPropertyTags] = useState<string[]>([]);
+  const [savingInternal, setSavingInternal] = useState(false);
+  const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAdmin = agent?.role === 'admin';
   const isOwn = property?.agent_id === agent?.id || isAdmin;
@@ -145,6 +152,8 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
       .eq('id', propertyId)
       .single();
     setProperty(data);
+    setInternalNotes(data?.internal_notes || '');
+    setPropertyTags(data?.tags || []);
     setLoading(false);
   }
 
@@ -249,6 +258,27 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
     setDeletingProperty(false);
     await fetch(`/api/properties/${propertyId}`, { method: 'DELETE' });
     router.push('/properties');
+  }
+
+  async function saveInternalData(fields: { internal_notes?: string; tags?: string[] }) {
+    setSavingInternal(true);
+    await fetch(`/api/properties/${propertyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    });
+    setSavingInternal(false);
+  }
+
+  function handleNotesChange(val: string) {
+    setInternalNotes(val);
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(() => saveInternalData({ internal_notes: val }), 1200);
+  }
+
+  async function handleTagsChange(newTags: string[]) {
+    setPropertyTags(newTags);
+    await saveInternalData({ tags: newTags });
   }
 
   async function handlePriceUpdate() {
@@ -797,8 +827,8 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 mb-6 w-fit">
-        {([['overview', 'פרטים'], ['images', 'תמונות'], ['price', 'היסטוריית מחיר'], ['offers', 'הצעות'], ['share', 'שיתוף'], ['messages', 'הודעות']] as const).map(([key, label]) => (
+      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 mb-6 w-fit flex-wrap">
+        {([['overview', 'פרטים'], ['images', 'תמונות'], ['price', 'היסטוריית מחיר'], ['offers', 'הצעות'], ['share', 'שיתוף'], ['messages', 'הודעות'], ['internal', 'פנימי 🔒']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -1197,6 +1227,39 @@ export default function PropertyPage({ params }: { params: Promise<{ propertyId:
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Internal Tab */}
+      {tab === 'internal' && (
+        <div className="space-y-5">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-white font-semibold">הערות פנימיות</h2>
+              {savingInternal && (
+                <span className="text-gray-500 text-xs">שומר...</span>
+              )}
+            </div>
+            <p className="text-gray-600 text-xs mb-4">נראות רק לסוכנים במשרד. לא חשופות ללקוחות.</p>
+            <textarea
+              value={internalNotes}
+              onChange={e => handleNotesChange(e.target.value)}
+              rows={7}
+              dir="rtl"
+              placeholder="הוסף הערות פנימיות על הנכס — מחיר מינימום, מצב משא ומתן, פרטי בעלים..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 text-sm resize-none leading-relaxed"
+            />
+          </div>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-white font-semibold mb-1">תגיות</h2>
+            <p className="text-gray-600 text-xs mb-4">לשימוש פנימי בלבד — סינון וארגון נכסים. לחץ Enter או פסיק להוספה.</p>
+            <TagInput
+              tags={propertyTags}
+              onChange={handleTagsChange}
+              placeholder="הקלד תגית ולחץ Enter..."
+            />
+          </div>
         </div>
       )}
 

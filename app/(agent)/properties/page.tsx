@@ -268,6 +268,7 @@ export default function PropertiesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'sold' | 'inactive'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>('date-new');
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
@@ -286,11 +287,19 @@ export default function PropertiesPage() {
     return Math.ceil(max / step) * step;
   }, [properties]);
 
+  // All unique tags across all properties
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach(p => (p.tags || []).forEach(t => set.add(t)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'he'));
+  }, [properties]);
+
   const filtered = useMemo(() => {
     let result = properties.filter(p => {
       if (filter === 'mine' && p.agent_id !== agent?.id) return false;
       if (statusFilter !== 'all' && p.status !== statusFilter) return false;
       if (cityFilter && p.city?.trim() !== cityFilter) return false;
+      if (tagFilter && !(p.tags || []).includes(tagFilter)) return false;
       if (priceRange) {
         const [minP, maxP] = priceRange;
         if (p.current_price < minP || p.current_price > maxP) return false;
@@ -318,7 +327,7 @@ export default function PropertiesPage() {
     });
 
     return result;
-  }, [properties, filter, statusFilter, cityFilter, searchQuery, sortBy, priceRange, agent?.id]);
+  }, [properties, filter, statusFilter, cityFilter, tagFilter, searchQuery, sortBy, priceRange, agent?.id]);
 
   function formatPrice(price: number) {
     return '₪' + price.toLocaleString('he-IL');
@@ -344,7 +353,7 @@ export default function PropertiesPage() {
     { key: 'inactive', label: 'לא פעיל' },
   ];
 
-  const hasActiveFilters = searchQuery.trim() || cityFilter || filter !== 'all' || statusFilter !== 'all' || sortBy !== 'date-new' || priceRange !== null;
+  const hasActiveFilters = searchQuery.trim() || cityFilter || filter !== 'all' || statusFilter !== 'all' || sortBy !== 'date-new' || priceRange !== null || tagFilter !== null;
 
   function clearAllFilters() {
     setSearchQuery('');
@@ -353,6 +362,7 @@ export default function PropertiesPage() {
     setStatusFilter('all');
     setSortBy('date-new');
     setPriceRange(null);
+    setTagFilter(null);
   }
 
   return (
@@ -529,6 +539,33 @@ export default function PropertiesPage() {
             onChange={setPriceRange}
             formatPrice={formatPrice}
           />
+        </div>
+      )}
+
+      {/* Tag Filter */}
+      {allTags.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', fontWeight: 500, lineHeight: '26px' }}>תגיות:</span>
+          {allTags.map(tag => (
+            <button
+              key={tag}
+              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+              style={{
+                padding: '3px 11px',
+                background: tagFilter === tag ? 'rgba(46,168,223,0.12)' : 'transparent',
+                border: `1px solid ${tagFilter === tag ? 'rgba(46,168,223,0.4)' : 'var(--color-border)'}`,
+                borderRadius: 20,
+                color: tagFilter === tag ? 'var(--color-accent)' : 'var(--color-muted)',
+                fontSize: 'var(--text-xs)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s',
+                fontWeight: tagFilter === tag ? 600 : 400,
+              }}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       )}
 
@@ -718,6 +755,31 @@ export default function PropertiesPage() {
                       </span>
                     )}
                   </div>
+                  {(property.tags || []).length > 0 && (
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>
+                      {(property.tags || []).slice(0, 3).map(tag => (
+                        <span
+                          key={tag}
+                          style={{
+                            padding: '1px 7px',
+                            background: 'rgba(46,168,223,0.08)',
+                            border: '1px solid rgba(46,168,223,0.18)',
+                            borderRadius: 12,
+                            fontSize: 11,
+                            color: 'var(--color-accent)',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {(property.tags || []).length > 3 && (
+                        <span style={{ fontSize: 11, color: 'var(--color-muted)', lineHeight: '20px' }}>
+                          +{(property.tags || []).length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Link>
             );
