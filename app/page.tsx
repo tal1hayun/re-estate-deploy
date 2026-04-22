@@ -2,8 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import MapBackground from '@/components/MapBackground';
+import type { MapProperty } from '@/components/PropertyMap';
+
+// Leaflet needs `window` — load only in browser
+const PropertyMap = dynamic(() => import('@/components/PropertyMap'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 520, borderRadius: 12, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-muted)', fontSize: 'var(--text-sm)' }}>
+      טוען מפה…
+    </div>
+  ),
+});
 
 // ── Public Catalog Types ──────────────────────────────────────────────────────
 type PublicProperty = {
@@ -13,6 +25,8 @@ type PublicProperty = {
   city: string;
   current_price: number;
   organization_id: string;
+  latitude: number | null;
+  longitude: number | null;
   organizations: { id: string; name: string } | null;
   property_details: {
     bedrooms?: number; bathrooms?: number;
@@ -304,6 +318,7 @@ export default function LandingPage() {
   const [pubCity, setPubCity] = useState('');
   const [pubSort, setPubSort] = useState<'newest' | 'price_asc' | 'price_desc' | 'rooms_desc'>('newest');
   const [pubShowAll, setPubShowAll] = useState(false);
+  const [pubView, setPubView] = useState<'list' | 'map'>('list');
 
   const { signIn, signUp, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -896,6 +911,49 @@ export default function LandingPage() {
                   <option value="rooms_desc">חדרים: הרבה לפחות</option>
                 </select>
 
+                {/* View toggle: list / map */}
+                <div
+                  role="tablist"
+                  aria-label="מצב תצוגה"
+                  style={{
+                    flex: '0 0 auto',
+                    display: 'inline-flex',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 8,
+                    padding: 2,
+                  }}
+                >
+                  {[
+                    { key: 'list' as const, label: 'רשימה' },
+                    { key: 'map' as const, label: 'מפה' },
+                  ].map(v => {
+                    const active = pubView === v.key;
+                    return (
+                      <button
+                        key={v.key}
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setPubView(v.key)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: 6,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: active ? 'var(--color-accent)' : 'transparent',
+                          color: active ? '#fff' : 'var(--color-muted)',
+                          fontSize: 'var(--text-sm)',
+                          fontWeight: 600,
+                          fontFamily: 'inherit',
+                          transition: 'background 0.15s, color 0.15s',
+                        }}
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Clear all filters */}
                 {(pubSearch || pubCity || pubSort !== 'newest') && (
                   <button
@@ -919,8 +977,17 @@ export default function LandingPage() {
           </div>
 
           {pubLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-              <div className="spinner" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                  <div style={{ width: '100%', aspectRatio: '16/10', background: 'var(--color-surface-2)', animation: 'pulse 1.6s ease-in-out infinite' }} />
+                  <div style={{ padding: '14px 16px' }}>
+                    <div style={{ height: 16, borderRadius: 6, background: 'var(--color-surface-2)', marginBottom: 8, width: '70%', animation: 'pulse 1.6s ease-in-out infinite' }} />
+                    <div style={{ height: 12, borderRadius: 6, background: 'var(--color-surface-2)', marginBottom: 16, width: '50%', animation: 'pulse 1.6s ease-in-out infinite' }} />
+                    <div style={{ height: 20, borderRadius: 6, background: 'var(--color-surface-2)', width: '40%', animation: 'pulse 1.6s ease-in-out infinite' }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : pubProps.length > 0 ? (
             <>
@@ -936,6 +1003,27 @@ export default function LandingPage() {
                   <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
                   <p>לא נמצאו נכסים התואמים לחיפוש</p>
                 </div>
+              ) : pubView === 'map' ? (
+                <PropertyMap
+                  height={560}
+                  properties={pubFiltered.map<MapProperty>(p => {
+                    const cover = pubCover(p.property_images);
+                    return {
+                      id: p.id,
+                      title: p.title,
+                      city: p.city,
+                      address: p.address,
+                      current_price: p.current_price,
+                      latitude: p.latitude,
+                      longitude: p.longitude,
+                      cover_url: cover ? pubImgUrl(cover.storage_path) : null,
+                    };
+                  })}
+                  onSelect={id => {
+                    const prop = pubFiltered.find(x => x.id === id);
+                    if (prop) setPubSelected(prop);
+                  }}
+                />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
                   {(pubShowAll ? pubFiltered : pubFiltered.slice(0, 6)).map(p => {

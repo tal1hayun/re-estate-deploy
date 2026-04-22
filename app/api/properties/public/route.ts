@@ -9,7 +9,7 @@ export async function GET() {
   const { data, error } = await admin
     .from('properties')
     .select(`
-      id, title, address, city, current_price, organization_id,
+      id, title, address, city, current_price, organization_id, latitude, longitude,
       organizations(id, name),
       property_details(bedrooms, bathrooms, built_size_sqm, lot_size_sqm, has_garden, has_pool, has_balcony),
       property_images(id, storage_path, is_cover, display_order)
