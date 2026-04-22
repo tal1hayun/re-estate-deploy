@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ignore build artifacts inside git worktrees
+    ".claude/worktrees/**/.next/**",
+    ".claude/worktrees/**/node_modules/**",
   ]),
 ]);
 
