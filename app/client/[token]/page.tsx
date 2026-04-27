@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase-server';
 import ClientPropertyView from './ClientPropertyView';
 
 const siteUrl = 'https://talestate.vercel.app';
-const ogImageUrl = `${siteUrl}/opengraph-image`;
+const ogImageUrl = `${siteUrl}/og-image.png`;
 
 type Props = { params: Promise<{ token: string }> };
 
