@@ -24,6 +24,8 @@ type Props = {
   focusId?: string | null;
   /** Use a static center when there are no properties with coords */
   fallbackCenter?: [number, number];
+  /** Zoom level when displaying a single property (default 14) */
+  singleZoom?: number;
 };
 
 // Fix default marker icons for Leaflet when bundled (Next/Webpack)
@@ -50,16 +52,16 @@ const accentIcon = L.divIcon({
   popupAnchor: [0, -30],
 });
 
-function FitBounds({ points }: { points: [number, number][] }) {
+function FitBounds({ points, singleZoom = 14 }: { points: [number, number][]; singleZoom?: number }) {
   const map = useMap();
   useEffect(() => {
     if (!points.length) return;
     if (points.length === 1) {
-      map.setView(points[0], 14);
+      map.setView(points[0], singleZoom);
     } else {
       map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
     }
-  }, [map, points]);
+  }, [map, points, singleZoom]);
   return null;
 }
 
@@ -79,6 +81,7 @@ export default function PropertyMap({
   height = 480,
   focusId = null,
   fallbackCenter = [32.0853, 34.7818], // Tel Aviv
+  singleZoom = 14,
 }: Props) {
   const ref = useRef<L.Map | null>(null);
 
@@ -130,7 +133,7 @@ export default function PropertyMap({
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds points={points} />
+        <FitBounds points={points} singleZoom={singleZoom} />
         <FlyToFocus focusId={focusId} map={focusMap} />
         {withCoords.map(p => (
           <Marker key={p.id} position={[p.latitude, p.longitude]} icon={accentIcon}>
