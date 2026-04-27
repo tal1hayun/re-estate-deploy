@@ -31,5 +31,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Exclude public client pages from middleware — no auth needed
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|client|api/client|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|client|api/client|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
