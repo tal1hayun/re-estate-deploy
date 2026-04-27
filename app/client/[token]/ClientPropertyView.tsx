@@ -39,11 +39,6 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // Messaging
-  const [senderName, setSenderName] = useState('');
-  const [messageText, setMessageText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     fetch(`/api/client/${token}`)
@@ -60,18 +55,6 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
     return '₪' + p.toLocaleString('he-IL');
   }
 
-  async function sendMessage() {
-    if (!messageText.trim()) return;
-    setSending(true);
-    await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, sender_name: senderName, message_text: messageText }),
-    });
-    setSending(false);
-    setSent(true);
-    setMessageText('');
-  }
 
   function imageUrl(path: string) {
     return `${SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
@@ -256,43 +239,6 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
             />
           </div>
         )}
-
-        {/* Contact Form */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-4">
-          <h2 className="font-semibold text-white mb-4">שלח הודעה לסוכן</h2>
-          {sent ? (
-            <div className="text-center py-4">
-              <div className="text-3xl mb-2">✓</div>
-              <p className="text-green-400 font-medium">ההודעה נשלחה!</p>
-              <p className="text-gray-500 text-sm mt-1">הסוכן יחזור אליך בהקדם</p>
-              <button onClick={() => setSent(false)} className="text-blue-400 text-sm mt-3 hover:underline">שלח הודעה נוספת</button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={senderName}
-                onChange={e => setSenderName(e.target.value)}
-                placeholder="השם שלך"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
-              />
-              <textarea
-                value={messageText}
-                onChange={e => setMessageText(e.target.value)}
-                rows={3}
-                placeholder="כתוב הודעה לסוכן..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm resize-none"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={sending || !messageText.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-medium transition-colors"
-              >
-                {sending ? 'שולח...' : 'שלח הודעה'}
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Footer */}
         <p className="text-center text-gray-600 text-xs mt-8">מופעל על ידי T ESTATE · מערכת ניהול נכסי נדל״ן</p>
