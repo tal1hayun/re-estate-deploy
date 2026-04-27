@@ -45,6 +45,9 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // City-level geocoded coords (fallback when no exact coords)
+  const [cityCoords, setCityCoords] = useState<[number, number] | null>(null);
+
   useEffect(() => {
     fetch(`/api/client/${token}`)
       .then(r => r.json())
@@ -55,6 +58,23 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
       })
       .catch(() => { setError('שגיאה בטעינת הנכס'); setLoading(false); });
   }, [token]);
+
+  // Geocode city when no exact coords are available
+  useEffect(() => {
+    if (!property) return;
+    if (typeof property.latitude === 'number' && typeof property.longitude === 'number') return;
+    if (!property.city) return;
+    let cancelled = false;
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(property.city + ', Israel')}&format=json&limit=1`)
+      .then(r => r.json())
+      .then((data: Array<{ lat: string; lon: string }>) => {
+        if (!cancelled && data?.[0]) {
+          setCityCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [property]);
 
   function formatPrice(p: number) {
     return '₪' + p.toLocaleString('he-IL');
@@ -103,15 +123,27 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
   const lightboxImages = images.map(img => ({ id: img.id, url: imageUrl(img.storage_path) }));
 
   const hasCoords = typeof property.latitude === 'number' && typeof property.longitude === 'number';
-  const mapProps: MapProperty[] = hasCoords ? [{
-    id: property.id,
-    title: property.title,
-    city: property.city,
-    address: property.address,
-    current_price: property.current_price,
-    latitude: property.latitude,
-    longitude: property.longitude,
-  }] : [];
+  const mapProperties: MapProperty[] = hasCoords
+    ? [{
+        id: property.id,
+        title: property.title,
+        city: property.city,
+        address: property.address,
+        current_price: property.current_price,
+        latitude: property.latitude!,
+        longitude: property.longitude!,
+      }]
+    : cityCoords
+    ? [{
+        id: property.id,
+        title: property.title,
+        city: property.city,
+        address: property.city,
+        current_price: property.current_price,
+        latitude: cityCoords[0],
+        longitude: cityCoords[1],
+      }]
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
@@ -246,13 +278,19 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
           </div>
         )}
 
-        {/* Mini Map */}
-        {hasCoords && (
+        {/* Map */}
+        {(hasCoords || cityCoords) && (
           <div className="mb-4">
-            <h2 className="font-semibold text-white mb-3">מיקום הנכס</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="font-semibold text-white">מיקום הנכס</h2>
+              {!hasCoords && (
+                <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">מיקום אזורי</span>
+              )}
+            </div>
             <PropertyMap
               height={240}
-              properties={mapProps}
+              properties={mapProperties}
+              singleZoom={hasCoords ? 16 : 12}
             />
           </div>
         )}
