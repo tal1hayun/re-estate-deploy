@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     siteName: 'T ESTATE',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'T ESTATE — פלטפורמת הנדל״ן המתקדמת',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'T ESTATE — פלטפורמת הנדל״ן המתקדמת',
     description: 'מערכת פרימיום למשרדי נדל״ן וסוכנים — ניהול נכסים, לידים וחוויית לקוח ברמה הגבוהה ביותר',
-    images: ['/opengraph-image'],
+    images: ['/og-image.png'],
   },
 };
 
