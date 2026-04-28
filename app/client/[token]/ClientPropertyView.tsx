@@ -40,8 +40,9 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
 
-  // City-level geocoded coords (fallback when no exact coords)
-  const [cityCoords, setCityCoords] = useState<[number, number] | null>(null);
+  // Geocoded coords (fallback when no exact coords): address-level or city-level
+  const [geocodedCoords, setGeocodedCoords] = useState<[number, number] | null>(null);
+  const [geocodeIsCityOnly, setGeocodeIsCityOnly] = useState(false);
 
   useEffect(() => {
     fetch(`/api/client/${token}`)
@@ -54,20 +55,50 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
       .catch(() => { setError('שגיאה בטעינת הנכס'); setLoading(false); });
   }, [token]);
 
-  // Geocode city when no exact coords are available
+  // Geocode by full address first, fall back to city when no exact coords
   useEffect(() => {
     if (!property) return;
     if (typeof property.latitude === 'number' && typeof property.longitude === 'number') return;
     if (!property.city) return;
     let cancelled = false;
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(property.city + ', Israel')}&format=json&limit=1`)
-      .then(r => r.json())
-      .then((data: Array<{ lat: string; lon: string }>) => {
-        if (!cancelled && data?.[0]) {
-          setCityCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-        }
-      })
-      .catch(() => {});
+
+    const tryGeocode = async () => {
+      const address = property.address?.trim();
+      const city = property.city?.trim();
+
+      // 1. Try full address (address + city)
+      if (address) {
+        try {
+          const q = encodeURIComponent(`${address}, ${city}, Israel`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=il`);
+          const data: Array<{ lat: string; lon: string }> = await res.json();
+          if (!cancelled && data?.[0]) {
+            setGeocodedCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+            setGeocodeIsCityOnly(false);
+            return;
+          }
+        } catch { /* fall through */ }
+
+        // Address exists but Nominatim couldn't find it → don't fall back to city.
+        // Showing the wrong city location is worse than showing no map at all.
+        return;
+      }
+
+      // 2. No address at all → city is the only option (last resort)
+      if (city) {
+        try {
+          const q = encodeURIComponent(`${city}, Israel`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=il`);
+          const data: Array<{ lat: string; lon: string }> = await res.json();
+          if (!cancelled && data?.[0]) {
+            setGeocodedCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+            setGeocodeIsCityOnly(true);
+          }
+        } catch { /* ignore */ }
+      }
+    };
+
+    tryGeocode();
     return () => { cancelled = true; };
   }, [property]);
 
@@ -116,15 +147,15 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
         latitude: property.latitude!,
         longitude: property.longitude!,
       }]
-    : cityCoords
+    : geocodedCoords
     ? [{
         id: property.id,
         title: property.title,
         city: property.city,
-        address: property.city,
+        address: geocodeIsCityOnly ? property.city : property.address,
         current_price: property.current_price,
-        latitude: cityCoords[0],
-        longitude: cityCoords[1],
+        latitude: geocodedCoords[0],
+        longitude: geocodedCoords[1],
       }]
     : [];
 
@@ -262,18 +293,18 @@ export default function ClientPropertyView({ params }: { params: Promise<{ token
         )}
 
         {/* Map */}
-        {(hasCoords || cityCoords) && (
+        {(hasCoords || geocodedCoords) && (
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <h2 className="font-semibold text-white">מיקום הנכס</h2>
-              {!hasCoords && (
+              {!hasCoords && geocodeIsCityOnly && (
                 <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">מיקום אזורי</span>
               )}
             </div>
             <PropertyMap
               height={240}
               properties={mapProperties}
-              singleZoom={hasCoords ? 16 : 12}
+              singleZoom={hasCoords ? 16 : geocodeIsCityOnly ? 12 : 16}
             />
           </div>
         )}
