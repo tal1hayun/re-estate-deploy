@@ -163,4 +163,5 @@ export interface AuthContextType {
   signUp: (email: string, password: string, orgName: string, fullName: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
