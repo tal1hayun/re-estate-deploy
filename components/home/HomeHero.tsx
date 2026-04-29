@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 
 const QUICK_ACTIONS = ['active listings', 'pending review', 'new leads', 'my portfolio'];
+
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 export default function HomeHero() {
   const [query, setQuery] = useState('');
@@ -49,7 +52,7 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Layer 1 – Ambient center glow (where search lives) — fades in on load */}
+      {/* Layer 1 – Ambient center glow */}
       <div
         aria-hidden
         className="glow-wake"
@@ -61,7 +64,7 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Layer 2 – Radial vignette (fades grid toward edges) */}
+      {/* Layer 2 – Radial vignette */}
       <div
         aria-hidden
         style={{
@@ -72,7 +75,7 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Layer 3 – Depth gradient (top/bottom darkening for depth) */}
+      {/* Layer 3 – Depth gradient */}
       <div
         aria-hidden
         style={{
@@ -95,11 +98,16 @@ export default function HomeHero() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          marginTop: '-48px', // optical center
+          marginTop: '-48px',
         }}
       >
-        {/* Eyebrow – precise and quiet */}
-        <div className="hero-e0" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+        {/* Eyebrow */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease: EASE_OUT_EXPO, delay: 0.05 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}
+        >
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
           <h1 style={{
             fontSize: '0.625rem',
@@ -107,30 +115,40 @@ export default function HomeHero() {
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
             color: 'var(--color-accent)',
-            opacity: 0.42,
+            opacity: 0.55,
             margin: 0,
           }}>
             Property Network
           </h1>
           <div style={{ width: 36, height: 1, background: 'rgba(46, 168, 223, 0.16)' }} />
-        </div>
+        </motion.div>
 
-        {/* Tagline – context, not marketing */}
-        <p className="hero-e1" style={{
-          fontSize: '0.75rem',
-          fontWeight: 300,
-          color: 'rgba(240, 244, 246, 0.28)',
-          letterSpacing: '0.06em',
-          margin: '0 0 36px',
-          textAlign: 'center',
-          lineHeight: 1,
-        }}>
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease: EASE_OUT_EXPO, delay: 0.14 }}
+          style={{
+            fontSize: '0.75rem',
+            fontWeight: 300,
+            color: 'rgba(240, 244, 246, 0.28)',
+            letterSpacing: '0.06em',
+            margin: '0 0 36px',
+            textAlign: 'center',
+            lineHeight: 1,
+          }}
+        >
           From listing to close.
-        </p>
+        </motion.p>
 
-        {/* Search bar with ambient glow wrapper */}
-        <div className="search-glow hero-e2" style={{ width: '100%', position: 'relative' }}>
-
+        {/* Search bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease: EASE_OUT_EXPO, delay: 0.22 }}
+          className="search-glow"
+          style={{ width: '100%', position: 'relative' }}
+        >
           {/* Search icon */}
           <div
             aria-hidden
@@ -164,9 +182,7 @@ export default function HomeHero() {
               width: '100%',
               height: 68,
               padding: '0 92px 0 58px',
-              background: focused
-                ? 'rgba(10, 26, 34, 1)'
-                : 'rgba(10, 26, 34, 0.92)',
+              background: focused ? 'rgba(10, 26, 34, 1)' : 'rgba(10, 26, 34, 0.92)',
               border: `1px solid ${focused ? 'rgba(46, 168, 223, 0.3)' : 'rgba(46, 168, 223, 0.09)'}`,
               borderRadius: 12,
               color: 'var(--color-fg)',
@@ -219,16 +235,21 @@ export default function HomeHero() {
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
-        {/* Quick actions – commands separated by dots */}
-        <div className="hero-e3" style={{
-          marginTop: 24,
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}>
+        {/* Quick actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease: EASE_OUT_EXPO, delay: 0.32 }}
+          style={{
+            marginTop: 24,
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
           {QUICK_ACTIONS.map((label, i) => (
             <span key={label} style={{ display: 'flex', alignItems: 'center' }}>
               <button className="quick-action">{label}</button>
@@ -247,7 +268,7 @@ export default function HomeHero() {
               )}
             </span>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

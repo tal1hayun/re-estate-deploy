@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import type { PropertyImage } from '@/types';
@@ -369,10 +370,15 @@ export default function PropertiesPage() {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
 
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 28, flexWrap: 'wrap', gap: 16,
-      }}>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 28, flexWrap: 'wrap', gap: 16,
+        }}
+      >
         <div>
           <h1 style={{
             fontSize: 'var(--text-2xl)',
@@ -400,7 +406,7 @@ export default function PropertiesPage() {
           <IconPlus />
           נכס חדש
         </Link>
-      </div>
+      </motion.div>
 
       {/* Search + City + Sort row */}
       <div style={{
@@ -608,17 +614,25 @@ export default function PropertiesPage() {
           )}
         </div>
       ) : (
+        <AnimatePresence mode="sync">
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: 16,
         }}>
-          {filtered.map(property => {
+          {filtered.map((property, idx) => {
             const coverUrl = getCoverImage(property.property_images);
             const isOwn = property.agent_id === agent?.id;
             return (
-              <Link
+              <motion.div
                 key={property.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: Math.min(idx, 8) * 0.04 }}
+                whileHover={{ y: -5, transition: { type: 'spring', stiffness: 400, damping: 30 } }}
+              >
+              <Link
                 href={`/properties/${property.id}`}
                 style={{
                   background: 'var(--color-surface)',
@@ -627,28 +641,26 @@ export default function PropertiesPage() {
                   overflow: 'hidden',
                   textDecoration: 'none',
                   display: 'block',
-                  transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
                 }}
                 onMouseEnter={e => {
                   const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.borderColor = 'rgba(46,168,223,0.4)';
-                  el.style.transform = 'scale(1.02)';
-                  el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.35)';
+                  el.style.borderColor = 'rgba(46,168,223,0.35)';
+                  el.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)';
                 }}
                 onMouseLeave={e => {
                   const el = e.currentTarget as HTMLAnchorElement;
                   el.style.borderColor = 'var(--color-border)';
-                  el.style.transform = 'scale(1)';
                   el.style.boxShadow = 'none';
                 }}
               >
                 {/* Image + gradient overlay */}
-                <div style={{ height: 220, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+                <div className="card-img-wrap" style={{ height: 220, background: 'var(--color-surface-2)', position: 'relative' }}>
                   {coverUrl ? (
                     <img
                       src={coverUrl}
                       alt={property.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -782,9 +794,11 @@ export default function PropertiesPage() {
                   )}
                 </div>
               </Link>
+              </motion.div>
             );
           })}
         </div>
+        </AnimatePresence>
       )}
     </div>
   );

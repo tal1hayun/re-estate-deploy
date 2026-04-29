@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import MapBackground from '@/components/MapBackground';
+import ThemeToggle from '@/components/ThemeToggle';
 import type { MapProperty } from '@/components/PropertyMap';
 
 // Leaflet needs `window` — load only in browser
@@ -417,9 +419,10 @@ export default function LandingPage() {
         position: 'fixed', top: 0, right: 0, left: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 40px', height: '60px',
-        background: 'rgba(6, 15, 20, 0.85)',
+        background: 'var(--color-bg)',
         backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(46,168,223,0.07)',
+        borderBottom: '1px solid var(--color-border)',
+        transition: 'background 0.3s, border-color 0.3s',
       }}>
         {/* Logo */}
         <span style={{
@@ -472,6 +475,7 @@ export default function LandingPage() {
           >
             כניסה
           </button>
+          <ThemeToggle />
         </div>
       </nav>
 
@@ -769,21 +773,17 @@ export default function LandingPage() {
           gap: 24,
         }}>
           {FEATURES.map((f, i) => (
-            <div
+            <motion.div
               key={i}
               className="card-surface"
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
+              whileHover={{ y: -5, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
               style={{
                 padding: '36px 32px',
-                transition: 'border-color 0.2s, transform 0.2s',
                 cursor: 'default',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(46,168,223,0.25)';
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
               }}
             >
               <div style={{
@@ -819,7 +819,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -1165,9 +1165,14 @@ export default function LandingPage() {
           gap: 20,
         }}>
           {TESTIMONIALS.map((t, i) => (
-            <div
+            <motion.div
               key={i}
               className="card-surface"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.09 }}
+              whileHover={{ y: -4, scale: 1.01, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
               style={{ padding: '32px 28px' }}
             >
               {/* Quote mark */}
@@ -1195,7 +1200,7 @@ export default function LandingPage() {
                 <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-fg)' }}>{t.name}</div>
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 3 }}>{t.role}</div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
