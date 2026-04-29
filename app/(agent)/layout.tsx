@@ -3,7 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
   { href: '/home',         label: 'בית'    },
@@ -34,7 +36,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     '?';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background 0.3s' }}>
 
       {/* ── Premium nav bar ── */}
       <header
@@ -47,22 +49,23 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           alignItems: 'center',
           height: 52,
           padding: '0 48px',
-          background: 'rgba(6, 15, 20, 0.92)',
+          background: 'var(--color-bg)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(46, 168, 223, 0.06)',
+          borderBottom: '1px solid var(--color-border)',
+          transition: 'background 0.3s, border-color 0.3s',
         }}
       >
         {/* Logo → links to /home */}
         <Link href="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', userSelect: 'none' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 200, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(240, 244, 246, 0.55)' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 200, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'var(--color-secondary)' }}>
               re
             </span>
-            <span style={{ fontSize: '0.9375rem', fontWeight: 200, color: 'var(--color-accent)', opacity: 0.5, margin: '0 1px', letterSpacing: 0 }}>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 200, color: 'var(--color-accent)', opacity: 0.6, margin: '0 1px', letterSpacing: 0 }}>
               ·
             </span>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(240, 244, 246, 0.92)' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'var(--color-fg)' }}>
               estate
             </span>
           </div>
@@ -73,10 +76,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         </Link>
 
         {/* Logo → nav separator */}
-        <div style={{ marginLeft: 20, width: 1, height: 16, background: 'rgba(46, 168, 223, 0.08)', flexShrink: 0 }} />
+        <div style={{ marginLeft: 20, width: 1, height: 16, background: 'var(--color-border)', flexShrink: 0 }} />
 
         {/* Nav items — centered */}
-        <nav style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 40 }}>
+        <nav style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 }}>
           {NAV_ITEMS.map(item => {
             const isActive =
               pathname === item.href ||
@@ -85,16 +88,34 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.label}
                 href={item.href}
-                className={`nav-link${isActive ? ' nav-link-active' : ''}`}
                 style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px 12px',
+                  borderRadius: 6,
                   fontSize: '0.8125rem',
-                  fontWeight: isActive ? 500 : 300,
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? 'var(--color-fg)' : 'var(--color-secondary)',
                   textDecoration: 'none',
                   letterSpacing: '0.005em',
-                  padding: '4px 0',
                   userSelect: 'none',
+                  transition: 'color 0.15s',
                 }}
               >
+                {isActive && (
+                  <motion.span
+                    layoutId="agent-nav-active"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: 6,
+                      background: 'var(--color-accent-bg)',
+                      zIndex: -1,
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                  />
+                )}
                 {item.label}
               </Link>
             );
@@ -102,30 +123,32 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Nav → user area separator */}
-        <div style={{ marginRight: 14, width: 1, height: 16, background: 'rgba(46, 168, 223, 0.08)', flexShrink: 0 }} />
+        <div style={{ marginRight: 12, width: 1, height: 16, background: 'var(--color-border)', flexShrink: 0 }} />
 
         {/* User area */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <ThemeToggle />
+
           <button
             onClick={signOut}
             style={{
               padding: '5px 14px',
               background: 'transparent',
-              border: '1px solid rgba(46, 168, 223, 0.1)',
+              border: '1px solid var(--color-border)',
               borderRadius: 5,
-              color: 'rgba(122, 154, 170, 0.45)',
+              color: 'var(--color-muted)',
               fontSize: '0.75rem', fontWeight: 400,
               cursor: 'pointer', fontFamily: 'inherit',
               letterSpacing: '0.05em',
               transition: 'border-color 0.18s, color 0.18s',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(240, 104, 120, 0.25)';
-              e.currentTarget.style.color = 'rgba(240, 104, 120, 0.65)';
+              e.currentTarget.style.borderColor = 'rgba(240, 104, 120, 0.35)';
+              e.currentTarget.style.color = 'rgba(240, 104, 120, 0.8)';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(46, 168, 223, 0.1)';
-              e.currentTarget.style.color = 'rgba(122, 154, 170, 0.45)';
+              e.currentTarget.style.borderColor = 'var(--color-border)';
+              e.currentTarget.style.color = 'var(--color-muted)';
             }}
           >
             יציאה
@@ -135,12 +158,12 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           <div style={{
             width: 26, height: 26,
             borderRadius: '50%',
-            background: 'rgba(46, 168, 223, 0.08)',
-            border: '1px solid rgba(46, 168, 223, 0.18)',
+            background: 'var(--color-accent-bg)',
+            border: '1px solid rgba(46, 168, 223, 0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: '0.625rem', fontWeight: 500, color: 'rgba(46, 168, 223, 0.75)', lineHeight: 1 }}>
+            <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--color-accent)', lineHeight: 1 }}>
               {agentInitial}
             </span>
           </div>
