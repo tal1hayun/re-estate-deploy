@@ -320,7 +320,7 @@ export default function LandingPage() {
   const [pubShowAll, setPubShowAll] = useState(false);
   const [pubView, setPubView] = useState<'list' | 'map'>('list');
 
-  const { signIn, signUp, isAuthenticated } = useAuth();
+  const { signIn, signUp, resetPassword, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -355,6 +355,24 @@ export default function LandingPage() {
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? translateError(err.message) : 'אירעה שגיאה');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    setError('');
+    setSuccessMsg('');
+    if (!email.trim()) {
+      setError('יש להזין כתובת אימייל לפני שחזור הסיסמה');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email.trim());
+      setSuccessMsg('שלחנו לך קישור לאיפוס הסיסמה — בדוק את תיבת הדואר שלך (כולל ספאם)');
+    } catch {
+      setError('לא ניתן לשלוח קישור לאיפוס — בדוק שהאימייל נכון ונסה שוב');
     } finally {
       setLoading(false);
     }
@@ -653,6 +671,8 @@ export default function LandingPage() {
                     }}
                       onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--color-accent)'}
                       onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--color-muted)'}
+                      onClick={handleForgotPassword}
+                      disabled={loading}
                     >
                       שכחתי סיסמה
                     </button>
