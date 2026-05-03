@@ -56,10 +56,10 @@
 
 /* ── Light theme overrides ── */
 [data-theme="light"] {
-  --color-bg:          #F7F9FA;
+  --color-bg:          #E2EAEE;
   --color-surface:     #ffffff;
-  --color-surface-2:   #EEF2F4;
-  --color-surface-3:   #E4EAED;
+  --color-surface-2:   #D4E0E6;
+  --color-surface-3:   #C8D6DE;
   --color-border:      rgba(0, 0, 0, 0.07);
   --color-border-soft: rgba(0, 0, 0, 0.04);
   --color-fg:          #1d1d1f;
